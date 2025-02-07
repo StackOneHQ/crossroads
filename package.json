@@ -1,0 +1,22 @@
+{
+  "name": "crossroads",
+  "private": true,
+  "workspaces": ["packages/*", "examples/*"],
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "typegen": "turbo run cf-typegen",
+    "format": "biome format --write .",
+    "lint:biome": "biome lint .",
+    "check": "biome check --apply ."
+  },
+  "devDependencies": {
+    "@biomejs/biome": "1.5.3",
+    "@cloudflare/workers-types": "^4.20241230.0",
+    "turbo": "latest",
+    "typescript": "^5.5.2",
+    "wrangler": "^3.60.3"
+  }
+}
