@@ -38,7 +38,7 @@ export class DurableRunna extends Server<Env> {
     this.messages = await this.ctx.storage.get("messages") || [];
   }
 
-  registerDetails(details: UserInfo) {
+  async registerDetails(details: UserInfo): Promise<void> {
     this.ctx.storage.put("details", details);
     this.details = details;
 
@@ -52,12 +52,12 @@ export class DurableRunna extends Server<Env> {
       this.ctx.storage.put("roughPlan", roughPlan);
       return roughPlan;
     } else {
+      console.log("No details found");
       return null;
     }
   }
 
   async onAlarm(): Promise<void> {
-    console.log("Durable Object ID in onAlarm:", this.ctx.id);
     if (this.details) {
       const roughPlan = await buildPlan(this.details, this.env as unknown as Record<string, string>);
       this.roughPlan = roughPlan;
@@ -88,9 +88,6 @@ export class DurableRunna extends Server<Env> {
 
   async onConnect(connection: Connection<unknown>) {
     await this.init();
-    console.log("Durable Object ID in onConnect:", this.ctx.id);
-    const details = this.details || await this.ctx.storage.get("details");
-    console.log("details", details);
     let text = "";
     if (!this.roughPlan && !this.fullPlan && !this.calender) {
       text = `Welcome! I've received your running plan request and will get back to you shortly with a personalized plan.`;
@@ -119,6 +116,9 @@ export class DurableRunna extends Server<Env> {
         content: text
       })
     );
+
+    this.messages.push({role: "assistant", content: text});
+    this.ctx.storage.put("messages", this.messages);
   }
 
   buildSystemPrompt() {
@@ -207,16 +207,20 @@ export class DurableRunna extends Server<Env> {
 
 
     if (!this.roughPlan) {
+      const text = "I'm still thinking about your request. Please check back later.";
       connection.send(
         JSON.stringify({
           type: "message",
           role: "assistant",
-          content: "I'm still thinking about your request. Please check back later."
+          content: text
         })
       );
+      this.messages.push({role: "assistant", content: text});
+
+      if (!this.alarm) {
+        this.ctx.storage.setAlarm(Date.now() + 100);
+      }
     } else {
-
-
       const result = await this.callAgent(this.messages, this.env as unknown as Record<string, string>);
       this.messages.push({role: "assistant", content: result.text});
 
@@ -285,17 +289,26 @@ const app = new Hono<{ Bindings: Env }>();
 
 app.post('/api/info', async (c) => {
   const body = await c.req.json();
-  const parsedBody = userInfoSchema.parse(body);
-  const newId = c.env.DurableRunna.newUniqueId();
-  const durable = c.env.DurableRunna.get(newId);
-  
-  durable.registerDetails(parsedBody);
+  try {
+    const parsedBody = userInfoSchema.parse(body);
+    const newId = c.env.DurableRunna.newUniqueId();
+    const durable = c.env.DurableRunna.get(newId);
+    
+  const result = await durable.registerDetails(parsedBody);
+  console.log("result", result);
 
   return c.json({
-    success: true,
-    message: 'Plan info received',
-    id: newId.toString()
-  });
+      success: true,
+      message: 'Plan info received',
+      id: newId.toString()
+    });
+  } catch (error) {
+    console.error("Error parsing body", error);
+    return c.json({
+      success: false,
+      message: 'Invalid body'
+    }, 400);
+  }
 });
 
 app.get('/api/:id/reset', async (c) => {

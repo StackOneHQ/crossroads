@@ -26,7 +26,6 @@ export const ChatInterface = () => {
     onMessage(event) {
       try {
         const data = JSON.parse(event.data);
-        console.log(data);
         if (data.type === "message") {
           setMessages((prev) => [
             ...prev,
