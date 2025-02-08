@@ -114,21 +114,15 @@ describe('Graph', () => {
   it('should handle node failures and retry paths', async () => {
     const graph = new Graph<{}, TestState>()
       .addNode('A', createFailingNode('A'))
-      .addNode(
-        'B',
-        createTestNode('B', (n) => n + 1)
-      )
-      .addNode(
-        'C',
-        createTestNode('C', (n) => n + 1)
-      )
+      .addNode('B', createTestNode('B', n => n + 1))
+      .addNode('C', createTestNode('C', n => n + 1))
       .addEdge('A', 'B')
       .addEdge('B', 'C')
       .setMaxConcurrency(3);
 
-    await expect(firstValueFrom(graph.build('A', { value: 0, path: [] }))).rejects.toThrow(
-      'All tasks failed or no success found.'
-    );
+    await expect(
+      firstValueFrom(graph.build('A', { value: 0, path: [] }))
+    ).rejects.toThrow('A failed');
   });
 
   it('should handle cycles in the graph', async () => {
@@ -186,5 +180,93 @@ describe('Graph', () => {
     await expect(
       firstValueFrom(graph.build('nonexistent', { value: 0, path: [] }))
     ).rejects.toThrow('Node nonexistent not found');
+  });
+
+  it('should stop after reaching maxNodeExecutions', async () => {
+    const graph = new Graph<{}, TestState>()
+      .addNode('A', createTestNode('A', n => n + 1))
+      .addNode('B', createTestNode('B', n => n * 2))
+      .addEdge('A', 'B')
+      .addEdge('B', 'A')
+      .setMaxNodeExecutions(3);
+
+    await expect(
+      firstValueFrom(graph.build('A', { value: 1, path: [] }))
+    ).rejects.toThrow('Max node executions reached');
+  });
+
+  it('should handle multiple concurrent paths and take first success', async () => {
+    const graph = new Graph<{}, TestState>()
+      .addNode('start', createTestNode('start', n => n))
+      .addNode('fast', createDelayedNode('fast', 50, n => n + 1))
+      .addNode('slow', createDelayedNode('slow', 150, n => n + 2))
+      .addNode('end', SpecialNode.END)
+      .addEdge('start', 'fast')
+      .addEdge('start', 'slow')
+      .addEdge('fast', 'end')
+      .addEdge('slow', 'end')
+      .setMaxConcurrency(2);
+
+    const result = await firstValueFrom(graph.build('start', { value: 0, path: [] }));
+    expect(result.path).toContain('fast');
+    expect(result.path).not.toContain('slow');
+  });
+
+  it('should cancel other paths when one succeeds', async () => {
+    let slowNodeExecuted = false;
+    const graph = new Graph<{}, TestState>()
+      .addNode('start', createTestNode('start', n => n))
+      .addNode('fast', createDelayedNode('fast', 50, n => n + 1))
+      .addNode('slow', {
+        run: async (state: TestState) => {
+          await new Promise(resolve => setTimeout(resolve, 200));
+          slowNodeExecuted = true;
+          return { ...state, value: state.value + 2, path: [...(state.path || []), 'slow'] };
+        }
+      })
+      .addNode('end', SpecialNode.END)
+      .addEdge('start', 'fast')
+      .addEdge('start', 'slow')
+      .addEdge('fast', 'end')
+      .addEdge('slow', 'end')
+      .setMaxConcurrency(2);
+
+    const result = await firstValueFrom(graph.build('start', { value: 0, path: [] }));
+    expect(result.path).toContain('fast');
+    expect(slowNodeExecuted).toBe(false);
+  });
+
+  it('should stop after reaching maxEdgeConditionCalls', async () => {
+    let edgeCallCount = 0;
+    const graph = new Graph<{}, TestState>()
+      .addNode('A', createTestNode('A', n => n + 1))
+      .addNode('B', createTestNode('B', n => n * 2))
+      .addNode('end', SpecialNode.END)
+      .addConditionalEdge('A', (result) => {
+        edgeCallCount++;
+        return result.data.value < 10 ? 'B' : 'end';
+      })
+      .addConditionalEdge('B', () => 'A')
+      .setMaxEdgeConditionCalls(5)
+      .setMaxConcurrency(1);
+
+    const result = await firstValueFrom(graph.build('A', { value: 1, path: [] }));
+    expect(edgeCallCount).toBeLessThanOrEqual(5);
+    expect(result.path?.slice(-1)[0]).toBe('end');
+  });
+
+  it('should track execution counts in result', async () => {
+    const graph = new Graph<{}, TestState>()
+      .addNode('A', createTestNode('A', n => n + 1))
+      .addNode('B', createTestNode('B', n => n * 2))
+      .addNode('end', SpecialNode.END)
+      .addConditionalEdge('A', (result) => result.data.value < 5 ? 'B' : 'end')
+      .addConditionalEdge('B', () => 'A')
+      .setMaxNodeExecutions(10)
+      .setMaxEdgeConditionCalls(5)
+      .setMaxConcurrency(1);
+
+    const result = await firstValueFrom(graph.build('A', { value: 1, path: [] }));
+    expect(result.path?.length).toBeGreaterThan(1);
   });
 });

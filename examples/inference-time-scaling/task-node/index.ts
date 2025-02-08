@@ -14,7 +14,6 @@ export default class TaskNode extends CrossroadsGraphNode<Env> {
     await new Promise((resolve) => setTimeout(resolve, Math.random() * 1000)); // Random delay 0-1000ms
     return {
       ...state,
-      attempt: (state.attempt ?? 0) + 1,
       result: Math.floor(Math.random() * 10) + 1,
     };
   }

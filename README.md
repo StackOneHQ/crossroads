@@ -1,4 +1,4 @@
-# crossroads
+# CrossRoads 🚦
 
 > a smol package to orchestrate agent graphs in cloudflare workers + durable objects
 
