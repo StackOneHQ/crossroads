@@ -1,0 +1,12 @@
+.app-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2.5rem 0;
+}
+
+.app-title {
+  font-size: 1.875rem;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 1.5rem;
+}

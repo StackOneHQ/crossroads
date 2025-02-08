@@ -1,0 +1,27 @@
+{
+  "name": "durable-runna",
+  "main": "server/index.ts",
+  "compatibility_flags": ["nodejs_compat"],
+  "compatibility_date": "2024-11-29",
+  "assets": { "directory": "./public", "binding": "ASSETS" },
+  "build": { 
+    "command": "esbuild client/app.tsx --bundle --outfile=public/dist/app.js --platform=browser --loader:.css=css --minify"
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "DurableRunna",
+        "class_name": "DurableRunna"
+      }
+    ]
+  },
+  "env": {
+    "BASE_URL": "https://durable-runna.stackonehq.workers.dev"
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["DurableRunna"]
+    }
+  ]
+}

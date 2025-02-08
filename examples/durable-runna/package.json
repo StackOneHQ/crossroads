@@ -1,0 +1,30 @@
+{
+  "name": "@crossroads/durable-runna",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev --inspector-port 3918 --port 3920",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "@ai-sdk/google": "^1.1.10",
+    "@ai-sdk/openai": "^1.1.9",
+    "@radix-ui/react-label": "^2.1.2",
+    "@radix-ui/react-select": "^2.1.6",
+    "@radix-ui/react-slot": "^1.1.2",
+    "@tanstack/react-router": "^1.99.13",
+    "@types/react": "^19.0.8",
+    "@types/react-dom": "^19.0.3",
+    "ai": "^4.1.26",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "hono": "^4.7.0",
+    "ical-generator": "^8.1.1",
+    "lucide-react": "^0.475.0",
+    "partyserver": "^0.0.63",
+    "partysocket": "^1.0.3",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "zod": "^3.24.1"
+  }
+}
