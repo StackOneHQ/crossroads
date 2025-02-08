@@ -4,6 +4,11 @@
   "compatibility_flags": ["nodejs_compat"],
   "compatibility_date": "2024-11-29",
   "assets": { "directory": "./public", "binding": "ASSETS" },
+  "observability": {
+    "logs": {
+      "enabled": true
+    }
+  },
   "build": { 
     "command": "esbuild client/app.tsx --bundle --outfile=public/dist/app.js --platform=browser --loader:.css=css --minify"
   },

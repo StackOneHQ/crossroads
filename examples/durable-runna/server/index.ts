@@ -269,6 +269,16 @@ export class DurableRunna extends Server<Env> {
   async getMessages(): Promise<ChatMessage[]> {
     return await this.ctx.storage.get("messages") || [];
   }
+
+  async getState(): Promise<Record<string, unknown>> {
+    return {
+      details: this.details || await this.ctx.storage.get("details"),
+      roughPlan: this.roughPlan || await this.ctx.storage.get("roughPlan"),
+      fullPlan: this.fullPlan || await this.ctx.storage.get("fullPlan"),
+      calender: this.calender || await this.ctx.storage.get("calender"),
+      messages: this.messages || await this.ctx.storage.get("messages")
+    };
+  }
 }
 
 const app = new Hono<{ Bindings: Env }>();
@@ -302,6 +312,14 @@ app.get('/api/:id/messages', async (c) => {
   const stub = c.env.DurableRunna.get(durable);
   const messages = await stub.getMessages();
   return c.json({success: true, messages});
+});
+
+app.get('/api/:id/state', async (c) => {
+  const id = c.req.param('id');
+  const durable = c.env.DurableRunna.idFromString(id);
+  const stub = c.env.DurableRunna.get(durable);
+  const state = await stub.getState()
+  return c.json({success: true, state: JSON.stringify(state)});
 });
 
 app.get('/api/:id/calender', async (c) => {
