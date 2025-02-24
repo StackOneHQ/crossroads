@@ -179,3 +179,9 @@ dist
 .wrangler/
 
 .turbo
+
+# pnpm specific
+.pnpm-store/
+**/node_modules/.pnpm/
+pnpm-lock.yaml
+.pnpm-debug.log

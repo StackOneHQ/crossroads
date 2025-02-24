@@ -1,7 +1,6 @@
 {
   "name": "crossroads",
   "private": true,
-  "workspaces": ["packages/*", "examples/*"],
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
@@ -16,7 +15,8 @@
     "@biomejs/biome": "1.5.3",
     "@cloudflare/workers-types": "^4.20241230.0",
     "turbo": "latest",
-    "typescript": "^5.5.2",
-    "wrangler": "^3.60.3"
-  }
+    "typescript": "^5.7.3",
+    "wrangler": "^3.109.1"
+  },
+  "packageManager": "pnpm@9.12.1"
 }
