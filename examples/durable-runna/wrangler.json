@@ -20,7 +20,7 @@
       }
     ]
   },
-  "env": {
+  "vars": {
     "BASE_URL": "https://durable-runna.stackonehq.workers.dev"
   },
   "migrations": [

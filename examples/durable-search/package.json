@@ -1,0 +1,22 @@
+{
+  "name": "@crossroads/durable-search",
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "check": "tsc",
+    "test": "vitest"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "a smol search api powered by durable objects",
+  "devDependencies": {
+    "vitest": "2.1.8",
+    "@cloudflare/vitest-pool-workers": "^0.6.16"
+  },
+  "dependencies": {
+    "partyserver": "^0.0.64"
+  }
+}
