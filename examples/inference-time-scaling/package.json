@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "dev": "concurrently \"bun run dev:graph\" \"bun run dev:task\" \"bun run dev:validation\"",
+    "dev": "concurrently \"pnpmrun dev:graph\" \"pnpmrun dev:task\" \"pnpmrun dev:validation\"",
     "dev:graph": "wrangler dev --config graph/wrangler.json --inspector-port 3920 --port 3921",
     "dev:task": "wrangler dev --config task-node/wrangler.json --inspector-port 3922 --port 3923",
     "dev:validation": "wrangler dev --config validation-node/wrangler.json --inspector-port 3924 --port 3925"

@@ -1,4 +1,6 @@
-# crossroads durable object
+# Crossroads MCP
+
+> This poackage allows you to use mcp servers as tools in your favourite AI agents.
 
 To install dependencies:
 

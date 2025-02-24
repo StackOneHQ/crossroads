@@ -7,11 +7,11 @@ Generates a running training plan and a link to subscribe to a calender.
 ## Development
 
 ```bash
-bun run dev
+pnpmrun dev
 ```
 
 ## Deployment
 
 ```bash
-bun run deploy
+pnpmrun deploy
 ```
