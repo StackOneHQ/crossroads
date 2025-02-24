@@ -1,0 +1,20 @@
+{
+  "name": "durable-search",
+  "main": "./server/index.ts",
+  "compatibility_date": "2025-02-04",
+  "compatibility_flags": ["nodejs_compat"],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "DurableSearch",
+        "class_name": "DurableSearch"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_classes": ["DurableSearch"]
+    }
+  ]
+}

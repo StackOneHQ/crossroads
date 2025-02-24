@@ -14,7 +14,11 @@
     /* Specify how TypeScript looks up a file from a given module specifier. */
     "moduleResolution": "node",
     /* Specify type package names to be included without being referenced in a source file. */
-    "types": ["@cloudflare/workers-types"],
+    "types": [
+      "@cloudflare/workers-types",
+      "@cloudflare/vitest-pool-workers",
+      "@cloudflare/workers-types/experimental"
+    ],
     /* Enable importing .json files */
     "resolveJsonModule": true,
 
@@ -39,5 +43,5 @@
     /* Skip type checking all .d.ts files. */
     "skipLibCheck": true
   },
-  "exclude": ["*/.test.ts", "*/.spec.ts", "*/test/", "**/vitest.config.ts"]
+  "exclude": ["**/*.test.ts", "**/*.spec.ts", "**/*.test/", "**/vitest.config.ts"]
 }
