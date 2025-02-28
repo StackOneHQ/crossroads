@@ -98,7 +98,7 @@ pnpm test
 
 The implementation includes:
 
-- Unit tests for the AgentSearch class
+- Unit tests for the DurableSearch class
 - Integration tests for the API endpoints
 - Mock implementations for testing SQLite operations
 

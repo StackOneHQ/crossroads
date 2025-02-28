@@ -12,7 +12,7 @@ import {
 } from "./types";
 
 export type Env = {
-  AgentSearch: AgentNamespace<AgentSearch>;
+  DurableSearch: AgentNamespace<DurableSearch>;
 };
 
 interface VectorStoreState {
@@ -30,7 +30,7 @@ const STORAGE_BATCH_SIZE = 1000;
 // Maximum results per query page
 const MAX_RESULTS_PER_PAGE = 100;
 
-export class AgentSearch extends Agent<Env, VectorStoreState> {
+export class DurableSearch extends Agent<Env, VectorStoreState> {
   // Set initial state
   initialState: VectorStoreState = {
     documents: [],
@@ -139,7 +139,7 @@ export class AgentSearch extends Agent<Env, VectorStoreState> {
   
   // Initialize the agent - load index from storage if available
   async initialize(): Promise<void> {
-    console.log("Initializing AgentSearch");
+    console.log("Initializing DurableSearch");
     
     // Load the index from storage if we don't have it in memory
     if (this.state.documents.length === 0) {
@@ -635,11 +635,11 @@ const routeVectorStoreRequest = async (
   env: Env,
 ): Promise<Response> => {
   console.log("routeVectorStoreRequest called with namespace:", namespace, "route:", route);
-  console.log("env.AgentSearch methods:", Object.keys(env.AgentSearch));
+  console.log("env.DurableSearch methods:", Object.keys(env.DurableSearch));
   
   try {
-    const id = env.AgentSearch.idFromName(namespace);
-    const stub = env.AgentSearch.get(id);
+    const id = env.DurableSearch.idFromName(namespace);
+    const stub = env.DurableSearch.get(id);
     
     // Initialize the agent if needed
     await stub.initialize();

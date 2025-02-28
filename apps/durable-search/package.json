@@ -1,5 +1,5 @@
 {
-  "name": "@crossroads/agent-search",
+  "name": "@crossroads/durable-search",
   "version": "0.0.1",
   "type": "module",
   "scripts": {
