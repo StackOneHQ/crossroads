@@ -1,5 +1,7 @@
 export const cosineSimilarity = (a: Float32Array, b: Float32Array): number => {
   // Check if vectors have the same dimensions
+  console.log("a", a)
+  console.log("b", b)
   if (a.length !== b.length) {
     throw new Error('Vectors must have the same dimensions');
   }

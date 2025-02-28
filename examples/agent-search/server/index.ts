@@ -24,6 +24,34 @@ export class AgentSearch extends Agent<Env, VectorStoreState> {
     documents: []
   };
   
+  // Helper method to ensure vector is a Float32Array
+  private ensureFloat32Array(vector: any): Float32Array {
+    if (vector instanceof Float32Array) {
+      return vector;
+    } 
+    
+    if (Array.isArray(vector)) {
+      console.log("Converting array to Float32Array:", vector.length);
+      return new Float32Array(vector);
+    }
+    
+    if (typeof vector === 'object' && vector !== null) {
+      // Handle case where vector is stored as an object with numeric keys
+      const vectorLength = Object.keys(vector).length;
+      console.log("Converting object to Float32Array:", vectorLength);
+      const result = new Float32Array(vectorLength);
+      
+      for (let i = 0; i < vectorLength; i++) {
+        result[i] = vector[i] as number;
+      }
+      
+      return result;
+    }
+    
+    console.error("Cannot convert to Float32Array, unexpected type:", typeof vector);
+    throw new Error(`Cannot convert to Float32Array: ${typeof vector}`);
+  }
+  
   // Upsert documents with vectors and attributes
   async upsert(
     ids: string[], 
@@ -60,8 +88,13 @@ export class AgentSearch extends Agent<Env, VectorStoreState> {
         documentAttributes[key] = values[i];
       }
 
+      // Create a Float32Array for the vector
+      // Note: When this is serialized to JSON, it will become an object with numeric keys
+      // We handle this in the query method
+      const vectorArray = this.ensureFloat32Array(vectors[i]);
+
       documents.set(ids[i], {
-        vector: new Float32Array(vectors[i]),
+        vector: vectorArray,
         attributes: documentAttributes
       });
     }
@@ -90,7 +123,7 @@ export class AgentSearch extends Agent<Env, VectorStoreState> {
     console.log("Filters:", filters ? JSON.stringify(filters).substring(0, 200) + "..." : "none");
     
     const results: QueryResult[] = [];
-    const queryVec = new Float32Array(queryVector);
+    const queryVec = this.ensureFloat32Array(queryVector);
     const documents = new Map(this.state.documents || []);
     console.log(`Processing query against ${documents.size} documents`);
 
@@ -174,7 +207,17 @@ export class AgentSearch extends Agent<Env, VectorStoreState> {
       }
 
       if (distanceMetric === DistanceMetric.cosine) {
-        const score = cosineSimilarity(queryVec, doc.vector);
+        // Convert vector to Float32Array if it's an object with numeric keys
+        let docVector: Float32Array;
+        
+        try {
+          docVector = this.ensureFloat32Array(doc.vector);
+        } catch (error) {
+          console.error(`Invalid vector format for document ${id}:`, error);
+          continue; // Skip this document
+        }
+        
+        const score = cosineSimilarity(queryVec, docVector);
         results.push({ 
           id, 
           score,
@@ -199,16 +242,36 @@ export class AgentSearch extends Agent<Env, VectorStoreState> {
 
 
   // Get the number of documents in the store
-  async getStats(): Promise<{ documentCount: number; status: string }> {
+  async getStats(): Promise<{ documentCount: number; status: string; vectorFormats?: any }> {
+    // Sample a few documents to check vector formats
+    const vectorFormats = this.state.documents.slice(0, 3).map(([id, doc]) => {
+      let vectorSample: any = null;
+      
+      if (doc.vector instanceof Float32Array) {
+        vectorSample = Array.from(doc.vector).slice(0, 5);
+      } else if (typeof doc.vector === 'object' && doc.vector !== null) {
+        // Handle object with numeric keys
+        vectorSample = Object.keys(doc.vector)
+          .slice(0, 5)
+          .map(k => [k, (doc.vector as any)[k]]);
+      }
+      
+      return {
+        id,
+        vectorType: doc.vector instanceof Float32Array ? 'Float32Array' : typeof doc.vector,
+        vectorSample
+      };
+    });
+    
     return {
       documentCount: this.state.documents.length,
-      status: "healthy"
+      status: "healthy",
+      vectorFormats
     };
   }
   
   // Maintenance task that runs periodically
   async runMaintenance(data: { timestamp: number }): Promise<void> {
-    console.log(`Running maintenance task at ${new Date().toISOString()}, triggered from ${new Date(data.timestamp).toISOString()}`);
     
     // Example: Use SQL to store some metrics
     this.sql`
