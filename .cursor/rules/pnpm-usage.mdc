@@ -1,0 +1,106 @@
+---
+description: use pnm in this repo instead of npm
+globs: 
+alwaysApply: false
+---
+# PNPM Usage Guidelines for CrossRoads
+
+<rule>
+name: pnpm_usage
+description: Guidelines for using pnpm as the package manager in the CrossRoads repository
+
+filters:
+  - type: event
+    pattern: "file_create|file_modify"
+  - type: file_path
+    pattern: "package\\.json$|.*\\.md$"
+
+actions:
+  - type: suggest
+    message: |
+      # PNPM Usage Guidelines for CrossRoads
+
+      ## Overview
+      
+      CrossRoads uses pnpm as its package manager. Always use pnpm instead of npm or yarn for all package management operations.
+      
+      ## Key Commands
+      
+      - **Install dependencies**: `pnpm install`
+      - **Add a dependency**: `pnpm add <package-name>`
+      - **Add a dev dependency**: `pnpm add -D <package-name>`
+      - **Run scripts**: `pnpm <script-name>` (e.g., `pnpm test`, `pnpm dev`)
+      - **Run scripts in specific packages**: `pnpm --filter <package-name> <script-name>`
+      
+      ## Workspace Commands
+      
+      CrossRoads is a monorepo using pnpm workspaces. Use these commands for workspace operations:
+      
+      - **Run a command in all packages**: `pnpm -r <command>`
+      - **Run a command in a specific package**: `pnpm --filter <package-name> <command>`
+      - **Add a dependency to a specific package**: `pnpm --filter <package-name> add <dependency>`
+      
+      ## Testing
+      
+      Always use pnpm to run tests:
+      
+      ```bash
+      # Run all tests
+      pnpm test
+      
+      # Run tests for a specific package
+      pnpm --filter @crossroads/durable-search test
+      ```
+      
+      ## CI/CD
+      
+      The CI/CD pipeline is configured to use pnpm. Never use npm or yarn in CI/CD scripts.
+
+examples:
+  - input: |
+      # Development
+      
+      To install dependencies:
+      
+      ```bash
+      npm install
+      ```
+      
+      To run tests:
+      
+      ```bash
+      npm test
+      ```
+    output: |
+      # Development
+      
+      To install dependencies:
+      
+      ```bash
+      pnpm install
+      ```
+      
+      To run tests:
+      
+      ```bash
+      pnpm test
+      ```
+  - input: |
+      // Add a script to package.json
+      {
+        "scripts": {
+          "test": "npm run test:unit && npm run test:integration"
+        }
+      }
+    output: |
+      // Add a script to package.json
+      {
+        "scripts": {
+          "test": "pnpm test:unit && pnpm test:integration"
+        }
+      }
+
+metadata:
+  priority: high
+  version: 1.0
+</rule> 
