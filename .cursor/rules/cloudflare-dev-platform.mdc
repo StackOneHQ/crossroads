@@ -1,6 +1,6 @@
 ---
 description: Writing code in this repo using CloudflareDev Platform
-globs: 
+globs: *.ts
 alwaysApply: false
 ---
 <system_context>

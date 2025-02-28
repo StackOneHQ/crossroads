@@ -1,0 +1,150 @@
+---
+description: Usage of this repo
+globs: 
+alwaysApply: false
+---
+# CrossRoads Repository Usage Guide
+
+This document provides guidelines for working with the CrossRoads repository, which uses pnpm workspaces, turborepo, and Biome for linting and formatting.
+
+<rule>
+name: crossroads_repo_usage
+description: Guidelines for working with the CrossRoads repository using pnpm workspaces, turborepo, and Biome
+
+filters:
+  - type: event
+    pattern: "file_create|file_modify"
+  - type: file_path
+    pattern: "packages/.*|examples/.*"
+
+actions:
+  - type: suggest
+    message: |
+      # CrossRoads Repository Usage Guide
+
+      ## Repository Structure
+      
+      This repository uses pnpm workspaces and turborepo to manage multiple packages:
+      
+      ```
+      crossroads/
+      ├── packages/           # Core packages
+      │   ├── crossroads-infra/
+      │   └── crossroads-graph/
+      ├── examples/           # Example implementations
+      │   ├── durable-search/
+      │   ├── durable-runna/
+      │   └── inference-time-scaling/
+      ├── pnpm-workspace.yaml # Workspace configuration
+      ├── turbo.json          # Turborepo configuration
+      ├── biome.json          # Biome linting/formatting config
+      └── package.json        # Root package configuration
+      ```
+
+      ## Getting Started
+
+      ### Prerequisites
+      
+      - Node.js (see package.json for version)
+      - pnpm v9.12.1 or compatible
+
+      ### Installation
+      
+      ```bash
+      # Install pnpm if you don't have it
+      npm install -g pnpm@9.12.1
+      
+      # Install dependencies
+      pnpm install
+      ```
+
+      ## Development Workflow
+
+      ### Running Commands
+      
+      All commands should be run from the repository root using pnpm and turborepo:
+      
+      ```bash
+      # Start development servers for all packages
+      pnpm dev
+      
+      # Build all packages
+      pnpm build
+      
+      # Run tests
+      pnpm test
+      
+      # Generate Cloudflare types
+      pnpm typegen
+      
+      # Format code
+      pnpm format
+      
+      # Lint code
+      pnpm lint:biome
+      
+      # Check and auto-fix issues
+      pnpm check
+      ```
+
+      ### Working with Workspaces
+      
+      To add a dependency to a specific package:
+      
+      ```bash
+      # Add a dependency to a specific package
+      pnpm --filter <package-name> add <dependency>
+      
+      # Example: Add lodash to crossroads-graph
+      pnpm --filter crossroads-graph add lodash
+      
+      # Add a dev dependency
+      pnpm --filter <package-name> add -D <dependency>
+      ```
+
+      To create a new package:
+      
+      1. Create a new directory in `packages/` or `examples/`
+      2. Initialize with `package.json`
+      3. Add to workspace by ensuring it's covered by patterns in `pnpm-workspace.yaml`
+
+      ### Biome Linting and Formatting
+      
+      This repository uses Biome for linting and formatting:
+      
+      - Configuration is in `biome.json`
+      - Run `pnpm format` to format all files
+      - Run `pnpm lint:biome` to lint all files
+      - Run `pnpm check` to check and auto-fix issues
+
+      ### Turborepo
+      
+      Turborepo manages the build pipeline:
+      
+      - Configuration is in `turbo.json`
+      - Caches build outputs for faster subsequent builds
+      - Manages dependencies between packages
+      - Runs tasks in parallel when possible
+
+      ## Best Practices
+      
+      1. Always run `pnpm format` and `pnpm lint:biome` before committing
+      2. Use workspace references for internal dependencies
+      3. Keep packages focused and modular
+      4. Follow the existing code style (using single quotes, 2 spaces for indentation)
+      5. Update documentation when adding new features
+
+examples:
+  - input: |
+      # Adding a new dependency to a package
+      pnpm --filter crossroads-infra add axios
+    output: "Correctly added dependency to a specific package"
+  - input: |
+      # Running development servers
+      pnpm dev
+    output: "Correctly running development servers for all packages"
+
+metadata:
+  priority: high
+  version: 1.0
+</rule>
