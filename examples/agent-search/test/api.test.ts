@@ -106,7 +106,8 @@ describe('API Integration Tests', () => {
       }, env);
       
       expect(response.status).toBe(200);
-      const results = await response.json() as QueryResult[];
+      const responseData = await response.json() as { results: QueryResult[] };
+      const results = responseData.results;
       
       // Verify results
       expect(Array.isArray(results)).toBe(true);
@@ -136,11 +137,11 @@ describe('API Integration Tests', () => {
       }, env);
       
       expect(response.status).toBe(200);
-      const results = await response.json() as QueryResult[];
+      const responseData = await response.json() as { results: QueryResult[] };
       
       // Verify results
-      expect(Array.isArray(results)).toBe(true);
-      expect(results.length).toBe(1); // Only one result due to top_k=1
+      expect(Array.isArray(responseData.results)).toBe(true);
+      expect(responseData.results.length).toBe(1); // Only one result due to top_k=1
     });
     
     it('should reject invalid query requests', async () => {

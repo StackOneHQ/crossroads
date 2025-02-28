@@ -6,6 +6,27 @@ export enum DistanceMetric {
   dot = "dot"
 }
 
+export enum FilterOperator {
+  Eq = "Eq",
+  NotEq = "NotEq",
+  In = "In",
+  NotIn = "NotIn",
+  Lt = "Lt",
+  Lte = "Lte",
+  Gt = "Gt",
+  Gte = "Gte",
+  Glob = "Glob",
+  NotGlob = "NotGlob",
+  IGlob = "IGlob",
+  NotIGlob = "NotIGlob",
+  And = "And",
+  Or = "Or"
+}
+
+export type FilterValue = string | number | boolean | null | string[] | number[] | boolean[] | Filter[];
+
+export type Filter = [string, FilterOperator, FilterValue] | [FilterOperator, Filter[]];
+
 export const AttributeConfigSchema = z.object({
   type: z.union([
     z.literal('string'),
@@ -25,18 +46,33 @@ export const upsertSchema = z.object({
   attributes: z.record(z.string(), z.array(z.string().nullable())),
 });
 
+// Define recursive filter schema
+const filterValueSchema: z.ZodType<FilterValue> = z.lazy(() => 
+  z.union([
+    z.string(),
+    z.number(),
+    z.boolean(),
+    z.null(),
+    z.array(z.string()),
+    z.array(z.number()),
+    z.array(z.boolean()),
+    z.array(filterSchema)
+  ])
+);
+
+const filterSchema: z.ZodType<Filter> = z.lazy(() => 
+  z.union([
+    z.tuple([z.string(), z.nativeEnum(FilterOperator), filterValueSchema]),
+    z.tuple([z.nativeEnum(FilterOperator), z.array(filterSchema)])
+  ])
+);
+
 export const querySchema = z.object({
   vector: z.array(z.number()),
   top_k: z.number().int().positive().optional().default(10),
   distance_metric: z.nativeEnum(DistanceMetric).optional().default(DistanceMetric.cosine),
-  filters: z.union([
-    z.record(z.string(), z.array(z.any())),
-    z.array(z.object({
-      field: z.string(),
-      op: z.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'in']),
-      value: z.any()
-    }))
-  ]).optional()
+  filters: filterSchema.optional(),
+  cursor: z.string().optional()
 });
 
 type AttributeValue = string | null;

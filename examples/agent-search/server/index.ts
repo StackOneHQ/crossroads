@@ -4,6 +4,8 @@ import { cosineSimilarity } from "./similarity";
 import {
   DistanceMetric,
   Document,
+  Filter,
+  FilterOperator,
   QueryResult,
   querySchema,
   upsertSchema
@@ -13,7 +15,6 @@ export type Env = {
   AgentSearch: AgentNamespace<AgentSearch>;
 };
 
-// Enhanced state interface with cursor support
 interface VectorStoreState {
   documents: Array<[string, Document]>;
   // Track the last cursor for pagination
@@ -235,7 +236,7 @@ export class AgentSearch extends Agent<Env, VectorStoreState> {
     queryVector: number[], 
     topK = 10, 
     distanceMetric: DistanceMetric = DistanceMetric.cosine,
-    filters?: Record<string, any[]> | any[],
+    filters?: Filter,
     cursor?: string
   ): Promise<{
     results: QueryResult[],
@@ -273,81 +274,8 @@ export class AgentSearch extends Agent<Env, VectorStoreState> {
       const [id, doc] = documentEntries[i];
       
       // Skip documents that don't match filters
-      if (filters) {
-        if (Array.isArray(filters)) {
-          // Handle array filters (complex filter expressions)
-          let matchesFilters = true;
-          for (const filter of filters) {
-            if (typeof filter === 'object' && 'field' in filter && 'op' in filter && 'value' in filter) {
-              const { field, op, value } = filter;
-              const attributeValue = doc.attributes[field];
-              
-              if (!attributeValue) {
-                matchesFilters = false;
-                break;
-              }
-              
-              switch (op) {
-                case 'eq':
-                  if (attributeValue !== value) {
-                    matchesFilters = false;
-                  }
-                  break;
-                case 'neq':
-                  if (attributeValue === value) {
-                    matchesFilters = false;
-                  }
-                  break;
-                case 'gt':
-                  if (!(attributeValue > value)) {
-                    matchesFilters = false;
-                  }
-                  break;
-                case 'gte':
-                  if (!(attributeValue >= value)) {
-                    matchesFilters = false;
-                  }
-                  break;
-                case 'lt':
-                  if (!(attributeValue < value)) {
-                    matchesFilters = false;
-                  }
-                  break;
-                case 'lte':
-                  if (!(attributeValue <= value)) {
-                    matchesFilters = false;
-                  }
-                  break;
-                case 'in':
-                  if (Array.isArray(value) && !value.includes(attributeValue)) {
-                    matchesFilters = false;
-                  }
-                  break;
-                default:
-                  // Unsupported operator
-                  matchesFilters = false;
-              }
-              
-              if (!matchesFilters) break;
-            } else {
-              // Invalid filter format
-              matchesFilters = false;
-              break;
-            }
-          }
-          if (!matchesFilters) continue;
-        } else if (typeof filters === 'object') {
-          // Handle object filters (attribute matching)
-          let matchesFilters = true;
-          for (const [key, values] of Object.entries(filters)) {
-            const attributeValue = doc.attributes[key];
-            if (!attributeValue || !values.includes(attributeValue)) {
-              matchesFilters = false;
-              break;
-            }
-          }
-          if (!matchesFilters) continue;
-        }
+      if (filters && !this.matchesFilter(id, doc, filters)) {
+        continue;
       }
 
       if (distanceMetric === DistanceMetric.cosine) {
@@ -399,6 +327,141 @@ export class AgentSearch extends Agent<Env, VectorStoreState> {
       results: pageResults,
       next_cursor: nextCursor
     };
+  }
+
+  // Helper method to check if a document matches a filter
+  private matchesFilter(id: string, doc: Document, filter: Filter): boolean {
+    // Handle And/Or operators
+    if (Array.isArray(filter) && filter.length === 2) {
+      const [firstElement, secondElement] = filter;
+      
+      // Check if it's a logical operator (And/Or)
+      if (firstElement === FilterOperator.And && Array.isArray(secondElement)) {
+        // All filters must match
+        return secondElement.every(subFilter => this.matchesFilter(id, doc, subFilter));
+      } else if (firstElement === FilterOperator.Or && Array.isArray(secondElement)) {
+        // At least one filter must match
+        return secondElement.some(subFilter => this.matchesFilter(id, doc, subFilter));
+      }
+    }
+    
+    // Handle field-based filters
+    if (Array.isArray(filter) && filter.length === 3 && typeof filter[0] === 'string') {
+      const [field, operator, value] = filter as [string, FilterOperator, any];
+      
+      // Special case for id field
+      if (field === 'id') {
+        return this.evaluateOperator(operator, id, value);
+      }
+      
+      // Get attribute value
+      const attributeValue = doc.attributes[field];
+      return this.evaluateOperator(operator, attributeValue, value);
+    }
+    
+    console.error("Invalid filter format:", filter);
+    return false;
+  }
+
+  // Helper method to evaluate filter operators
+  private evaluateOperator(operator: FilterOperator, fieldValue: string | null, filterValue: any): boolean {
+    switch (operator) {
+      case FilterOperator.Eq:
+        // If filterValue is null, matches documents missing the attribute or with null value
+        if (filterValue === null) {
+          return fieldValue === null || fieldValue === undefined;
+        }
+        return fieldValue === filterValue;
+        
+      case FilterOperator.NotEq:
+        // If filterValue is null, matches documents with non-null attribute
+        if (filterValue === null) {
+          return fieldValue !== null && fieldValue !== undefined;
+        }
+        return fieldValue !== filterValue;
+        
+      case FilterOperator.In:
+        // If both are arrays, check for intersection
+        if (Array.isArray(filterValue) && Array.isArray(fieldValue)) {
+          return filterValue.some(v => fieldValue.includes(v));
+        }
+        // Otherwise check if fieldValue is in filterValue array
+        return Array.isArray(filterValue) && filterValue.includes(fieldValue);
+        
+      case FilterOperator.NotIn:
+        // If both are arrays, check for no intersection
+        if (Array.isArray(filterValue) && Array.isArray(fieldValue)) {
+          return !filterValue.some(v => fieldValue.includes(v));
+        }
+        // Otherwise check if fieldValue is not in filterValue array
+        return !Array.isArray(filterValue) || !filterValue.includes(fieldValue);
+        
+      case FilterOperator.Lt:
+        if (fieldValue === null) return false;
+        if (typeof filterValue === 'number' && !isNaN(Number(fieldValue))) {
+          return Number(fieldValue) < filterValue;
+        }
+        return fieldValue < String(filterValue);
+        
+      case FilterOperator.Lte:
+        if (fieldValue === null) return false;
+        if (typeof filterValue === 'number' && !isNaN(Number(fieldValue))) {
+          return Number(fieldValue) <= filterValue;
+        }
+        return fieldValue <= String(filterValue);
+        
+      case FilterOperator.Gt:
+        if (fieldValue === null) return false;
+        if (typeof filterValue === 'number' && !isNaN(Number(fieldValue))) {
+          return Number(fieldValue) > filterValue;
+        }
+        return fieldValue > String(filterValue);
+        
+      case FilterOperator.Gte:
+        if (fieldValue === null) return false;
+        if (typeof filterValue === 'number' && !isNaN(Number(fieldValue))) {
+          return Number(fieldValue) >= filterValue;
+        }
+        return fieldValue >= String(filterValue);
+        
+      case FilterOperator.Glob:
+        if (fieldValue === null) return false;
+        return this.matchGlob(String(fieldValue), String(filterValue), false);
+        
+      case FilterOperator.NotGlob:
+        if (fieldValue === null) return true;
+        return !this.matchGlob(String(fieldValue), String(filterValue), false);
+        
+      case FilterOperator.IGlob:
+        if (fieldValue === null) return false;
+        return this.matchGlob(String(fieldValue), String(filterValue), true);
+        
+      case FilterOperator.NotIGlob:
+        if (fieldValue === null) return true;
+        return !this.matchGlob(String(fieldValue), String(filterValue), true);
+        
+      default:
+        console.error(`Unsupported operator: ${operator}`);
+        return false;
+    }
+  }
+
+  // Helper method to match glob patterns
+  private matchGlob(str: string, pattern: string, caseInsensitive: boolean): boolean {
+    if (caseInsensitive) {
+      str = str.toLowerCase();
+      pattern = pattern.toLowerCase();
+    }
+    
+    // Convert glob pattern to regex
+    const regexPattern = pattern
+      .replace(/\./g, '\\.')
+      .replace(/\*/g, '.*')
+      .replace(/\?/g, '.')
+      .replace(/\[!\]/g, '[^]');
+    
+    const regex = new RegExp(`^${regexPattern}$`);
+    return regex.test(str);
   }
 
   // Override onStateUpdate to handle state changes

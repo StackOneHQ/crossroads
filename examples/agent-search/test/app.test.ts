@@ -6,8 +6,8 @@ const mockGet = vi.fn();
 const mockIdFromName = vi.fn();
 
 // Mock the agent methods
-const mockFetch = vi.fn();
 const mockQuery = vi.fn();
+const mockUpsert = vi.fn();
 
 // Mock the environment
 const mockEnv = {
@@ -30,8 +30,9 @@ describe('Hono App', () => {
     // Set up default mock implementations
     mockIdFromName.mockReturnValue(mockId);
     mockGet.mockReturnValue({
-      fetch: mockFetch,
-      query: mockQuery
+      query: mockQuery,
+      upsert: mockUpsert,
+      initialize: vi.fn()
     });
   });
   
@@ -73,7 +74,8 @@ describe('Hono App', () => {
         [1, 2, 3], // vector
         5, // top_k
         "cosine", // distance_metric
-        undefined // filters (default)
+        undefined, // filters (default)
+        undefined  // cursor (default)
       );
     });
     

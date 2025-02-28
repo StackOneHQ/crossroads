@@ -1,23 +1,16 @@
 # Durable Search
 
-A turbopuffer-esque vector search api using Cloudflare Durable Objects and the Agent SDK.
+> a smol memory store for your ai agents
 
-## Overview
-
-This example demonstrates how to build a simple vector search service using Cloudflare's Durable Objects and the Agent SDK. The implementation provides:
-
-- Vector storage with SQLite persistence
-- Cosine similarity search
-- Document attributes storage
-- REST API for upsert and query operations
+This project is heavily inspired by [turbopuffer](https://turbopuffer.com/). Built on top of Cloudflare Durable Objects and the new Agent SDK.
 
 ## Features
 
 - **Persistent Storage**: Vectors and attributes are stored in SQLite tables via the Agent SDK
-- **Efficient Similarity Search**: Uses cosine similarity to find the most relevant documents
+- **Similarity Search**: Uses cosine similarity to find the most relevant documents
 - **Attribute Storage**: Store and retrieve metadata alongside vectors
+- **Filtering**: Filter results by attributes using a simple syntax that mimics the turbopuffer filter syntax
 - **REST API**: Simple API for upsert and query operations
-- **Comprehensive Tests**: Unit and integration tests for all functionality
 
 ## API
 
@@ -55,7 +48,8 @@ Request body:
 {
   "vector": [1, 0.1, 0],
   "top_k": 10,
-  "distance_metric": "cosine"
+  "distance_metric": "cosine",
+  "filters": ["And", [["title", "Eq", "First Document"]]]
 }
 ```
 
@@ -70,17 +64,15 @@ Response:
       "title": "First Document",
       "category": "A"
     }
-  },
-  {
-    "id": "doc2",
-    "score": 0.1,
-    "attributes": {
-      "title": "Second Document",
-      "category": "B"
-    }
   }
 ]
 ```
+
+#### Filter Syntax
+
+Filters work very similarly to the [turbopuffer filter syntax](https://turbopuffer.com/docs/query#filtering-parameters).
+
+I would recommend if you are needing alot of them to just use turbopuffer :)
 
 ## Development
 
