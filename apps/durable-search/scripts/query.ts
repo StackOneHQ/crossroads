@@ -28,7 +28,7 @@ const queryDocs = async (): Promise<void> => {
   //   { field: "title", op: "eq", value: "Doc 2" }
   // ]
   
-  const res = await fetch(`http://localhost:8787/v1/namespaces/${QUERY_NAMESPACE}/query`, {
+  const res = await fetch(`https://durable-search.stackonehq.workers.dev/v1/namespaces/${QUERY_NAMESPACE}/query`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json"

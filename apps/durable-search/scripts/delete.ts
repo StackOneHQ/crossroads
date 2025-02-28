@@ -19,7 +19,7 @@ const deleteDocuments = async (): Promise<void> => {
   const nullAttributes = documentIds.map(() => null)
   
   try {
-    const res = await fetch(`http://localhost:8787/v1/namespaces/${DELETE_NAMESPACE}`, {
+    const res = await fetch(`https://durable-search.stackonehq.workers.dev/v1/namespaces/${DELETE_NAMESPACE}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"

@@ -4,7 +4,7 @@ const UPSERT_NAMESPACE = "testspace"
 
 const loadDocs = async () => {
 
-  const res = await fetch(`http://localhost:8787/v1/namespaces/${UPSERT_NAMESPACE}`, {
+  const res = await fetch(`https://durable-search.stackonehq.workers.dev/v1/namespaces/${UPSERT_NAMESPACE}`, {
     method: "POST",
     body: JSON.stringify({
       ids: ["1", "2", "3"],
