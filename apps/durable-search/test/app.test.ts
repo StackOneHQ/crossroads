@@ -75,7 +75,6 @@ describe('Hono App', () => {
         5, // top_k
         "cosine", // distance_metric
         undefined, // filters (default)
-        undefined  // cursor (default)
       );
     });
     

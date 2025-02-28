@@ -72,7 +72,6 @@ export const querySchema = z.object({
   top_k: z.number().int().positive().optional().default(10),
   distance_metric: z.nativeEnum(DistanceMetric).optional().default(DistanceMetric.cosine),
   filters: filterSchema.optional(),
-  cursor: z.string().optional()
 });
 
 type AttributeValue = string | null;

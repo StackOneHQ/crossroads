@@ -17,8 +17,6 @@ export type Env = {
 
 interface VectorStoreState {
   documents: Array<[string, Document]>;
-  // Track the last cursor for pagination
-  lastCursor?: string;
   // Track when the index was last persisted to storage
   lastPersisted?: number;
   // Track total vector count for stats
@@ -27,8 +25,6 @@ interface VectorStoreState {
 
 // Batch size for storage operations
 const STORAGE_BATCH_SIZE = 1000;
-// Maximum results per query page
-const MAX_RESULTS_PER_PAGE = 100;
 
 export class DurableSearch extends Agent<Env, VectorStoreState> {
   // Set initial state
@@ -231,46 +227,30 @@ export class DurableSearch extends Agent<Env, VectorStoreState> {
     console.log("Maintenance task scheduled");
   }
 
-  // Query for similar vectors with cursor-based pagination
+  // Query for similar vectors
   async query(
     queryVector: number[], 
     topK = 10, 
     distanceMetric: DistanceMetric = DistanceMetric.cosine,
     filters?: Filter,
-    cursor?: string
   ): Promise<{
     results: QueryResult[],
-    next_cursor?: string
   }> {
-    console.log(`Query called with vector of length ${queryVector.length}, topK=${topK}, cursor=${cursor || 'none'}`);
+    console.log(`Query called with vector of length ${queryVector.length}, topK=${topK}`);
     console.log("Filters:", filters ? JSON.stringify(filters).substring(0, 200) + "..." : "none");
     
     // Limit topK to prevent excessive memory usage
-    const effectiveTopK = Math.min(topK, MAX_RESULTS_PER_PAGE);
-    
-    // Parse cursor if provided
-    let startIndex = 0;
-    if (cursor) {
-      try {
-        startIndex = parseInt(cursor, 10);
-        if (isNaN(startIndex) || startIndex < 0) {
-          startIndex = 0;
-        }
-      } catch (e) {
-        startIndex = 0;
-      }
-    }
+    const effectiveTopK = Math.min(topK);
     
     const allResults: QueryResult[] = [];
     const queryVec = this.ensureFloat32Array(queryVector);
     const documents = new Map(this.state.documents || []);
-    console.log(`Processing query against ${documents.size} documents starting at index ${startIndex}`);
+    console.log(`Processing query against ${documents.size} documents`);
 
     // Convert documents to array for easier pagination
     const documentEntries = Array.from(documents.entries());
     
-    // Process documents from the cursor position
-    for (let i = startIndex; i < documentEntries.length; i++) {
+    for (let i = 0; i < documentEntries.length; i++) {
       const [id, doc] = documentEntries[i];
       
       // Skip documents that don't match filters
@@ -307,25 +287,8 @@ export class DurableSearch extends Agent<Env, VectorStoreState> {
     // Get the top K results for this page
     const pageResults = allResults.slice(0, effectiveTopK);
     
-    // Calculate next cursor if there are more results
-    let nextCursor: string | undefined = undefined;
-    if (allResults.length > effectiveTopK) {
-      nextCursor = (startIndex + effectiveTopK).toString();
-    }
-    
-    console.log(`Query returning ${pageResults.length} results, next_cursor=${nextCursor || 'none'}`);
-    
-    // Update the last cursor in state
-    if (nextCursor) {
-      this.setState({
-        ...this.state,
-        lastCursor: nextCursor
-      });
-    }
-    
     return {
       results: pageResults,
-      next_cursor: nextCursor
     };
   }
 
@@ -682,15 +645,11 @@ const routeVectorStoreRequest = async (
           const body = await req.json() as any;
           const parsedBody = querySchema.parse(body);
           
-          // Extract cursor from request if present
-          const cursor = 'cursor' in body ? String(body.cursor) : undefined;
-          
           const queryResponse = await stub.query(
             parsedBody.vector,
             parsedBody.top_k,
             parsedBody.distance_metric,
             parsedBody.filters,
-            cursor
           );
           
           return Response.json(queryResponse);
