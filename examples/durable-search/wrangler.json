@@ -6,23 +6,15 @@
   "durable_objects": {
     "bindings": [
       {
-        "name": "DurableSearch",
-        "class_name": "DurableSearch"
-      },
-      {
-        "name": "VectorStoreAgent",
-        "class_name": "VectorStoreAgent"
+        "name": "DurableSearchAgent",
+        "class_name": "DurableSearchAgent"
       }
     ]
   },
   "migrations": [
     {
       "tag": "v1",
-      "new_classes": ["DurableSearch"]
-    },
-    {
-      "tag": "v2",
-      "new_sqlite_classes": ["VectorStoreAgent"]
+      "new_sqlite_classes": ["DurableSearchAgent"]
     }
   ]
 }

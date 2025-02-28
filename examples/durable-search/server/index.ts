@@ -10,7 +10,7 @@ import {
 } from "./types";
 
 export type Env = {
-  VectorStoreAgent: AgentNamespace<VectorStoreAgent>;
+  DurableSearchAgent: AgentNamespace<DurableSearchAgent>;
 };
 
 
@@ -18,7 +18,7 @@ interface VectorStoreState {
   documents: Array<[string, Document]>;
 }
 
-export class VectorStoreAgent extends Agent<Env, VectorStoreState> {
+export class DurableSearchAgent extends Agent<Env, VectorStoreState> {
   // Set initial state
   initialState: VectorStoreState = {
     documents: []
@@ -227,12 +227,17 @@ export class VectorStoreAgent extends Agent<Env, VectorStoreState> {
     // Schedule the next maintenance run (every hour)
     await this.schedule(3600, "runMaintenance", { timestamp: Date.now() });
   }
+
+  async getState(): Promise<VectorStoreState> {
+    return this.state;
+  }
 }
 
 const app = new Hono<{ Bindings: Env }>();
 
 
 enum VectorStoreRoutes {
+  Get = "get",
   Upsert = "upsert",
   Query = "query",
   Stats = "stats"
@@ -250,6 +255,19 @@ app.post("/v1/namespaces/:namespace", async (c) => {
   }
 
   return await routeVectorStoreRequest(namespace, VectorStoreRoutes.Upsert, c.req.raw, c.env);
+});
+
+app.get("/v1/namespaces/:namespace", async (c) => {
+  const namespace = c.req.param("namespace");
+
+  if (!namespace) {
+    return c.json({
+      success: false,
+      message: "Namespace name is required"
+    }, 400);
+  }
+
+  return await routeVectorStoreRequest(namespace, VectorStoreRoutes.Get, c.req.raw, c.env);
 });
 
 app.post("/v1/namespaces/:namespace/query", async (c) => {
@@ -289,25 +307,18 @@ app.get("*", async (c) => {
 export default app;
 
 
-export async function routeVectorStoreRequest(
+const routeVectorStoreRequest = async (
   namespace: string,
   route: VectorStoreRoutes,
   req: Request,
   env: Env,
-): Promise<Response> {
+): Promise<Response> => {
   console.log("routeVectorStoreRequest called with namespace:", namespace, "route:", route);
-  console.log("env.VectorStoreAgent methods:", Object.keys(env.VectorStoreAgent));
+  console.log("env.DurableSearchAgent methods:", Object.keys(env.DurableSearchAgent));
   
   try {
-    // Use idFromName to get the Durable Object ID
-    console.log("Attempting to create ID from namespace:", namespace);
-    const id = env.VectorStoreAgent.idFromName(namespace);
-    
-    console.log("ID created successfully:", id);
-    console.log("Getting stub for ID:", id.toString());
-    const stub = env.VectorStoreAgent.get(id);
-    
-    console.log("Stub created successfully, stub methods:", Object.getOwnPropertyNames(Object.getPrototypeOf(stub)));
+    const id = env.DurableSearchAgent.idFromName(namespace);
+    const stub = env.DurableSearchAgent.get(id);
     
     switch (route) {
       case VectorStoreRoutes.Upsert:
@@ -340,6 +351,8 @@ export async function routeVectorStoreRequest(
             message: error instanceof Error ? error.message : "Unknown error"
           }, { status: 400 });
         }
+      case VectorStoreRoutes.Get:
+        return Response.json(await stub.getState());
       case VectorStoreRoutes.Query:
         try {
           const body = await req.json();
