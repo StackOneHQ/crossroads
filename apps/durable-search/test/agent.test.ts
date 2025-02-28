@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { AgentSearch } from '../server';
+import { DurableSearch } from '../server';
 import { DistanceMetric, FilterOperator } from '../server/types';
 
 // Mock the Agent class methods
@@ -28,12 +28,12 @@ vi.mock('agents-sdk', async () => {
   };
 });
 
-describe('AgentSearch', () => {
-  let agent: AgentSearch;
+describe('DurableSearch', () => {
+  let agent: DurableSearch;
   
   beforeEach(() => {
     // Create a new agent instance before each test
-    agent = new AgentSearch({} as any, {} as any);
+    agent = new DurableSearch({} as any, {} as any);
     
     // Reset mocks
     vi.clearAllMocks();

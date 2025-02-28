@@ -11,7 +11,7 @@ const mockUpsert = vi.fn();
 
 // Mock the environment
 const mockEnv = {
-  AgentSearch: {
+  DurableSearch: {
     get: mockGet,
     idFromName: mockIdFromName
   }

@@ -15,7 +15,7 @@ filters:
   - type: event
     pattern: "file_create|file_modify"
   - type: file_path
-    pattern: "packages/.*|examples/.*"
+    pattern: "packages/.*|apps/.*"
 
 actions:
   - type: suggest
@@ -31,7 +31,7 @@ actions:
       ├── packages/           # Core packages
       │   ├── crossroads-infra/
       │   └── crossroads-graph/
-      ├── examples/           # Example implementations
+      ├── apps/           # Example implementations
       │   ├── durable-search/
       │   ├── durable-runna/
       │   └── inference-time-scaling/

@@ -6,15 +6,15 @@
   "durable_objects": {
     "bindings": [
       {
-        "name": "AgentSearch",
-        "class_name": "AgentSearch"
+        "name": "DurableSearch",
+        "class_name": "DurableSearch"
       }
     ]
   },
   "migrations": [
     {
       "tag": "v1",
-      "new_sqlite_classes": ["AgentSearch"]
+      "new_sqlite_classes": ["DurableSearch"]
     }
   ]
 }
