@@ -10,7 +10,7 @@ import {
 } from "./types";
 
 export type Env = {
-  DurableSearchAgent: AgentNamespace<DurableSearchAgent>;
+  AgentSearch: AgentNamespace<AgentSearch>;
 };
 
 
@@ -18,7 +18,7 @@ interface VectorStoreState {
   documents: Array<[string, Document]>;
 }
 
-export class DurableSearchAgent extends Agent<Env, VectorStoreState> {
+export class AgentSearch extends Agent<Env, VectorStoreState> {
   // Set initial state
   initialState: VectorStoreState = {
     documents: []
@@ -314,11 +314,11 @@ const routeVectorStoreRequest = async (
   env: Env,
 ): Promise<Response> => {
   console.log("routeVectorStoreRequest called with namespace:", namespace, "route:", route);
-  console.log("env.DurableSearchAgent methods:", Object.keys(env.DurableSearchAgent));
+  console.log("env.AgentSearch methods:", Object.keys(env.AgentSearch));
   
   try {
-    const id = env.DurableSearchAgent.idFromName(namespace);
-    const stub = env.DurableSearchAgent.get(id);
+    const id = env.AgentSearch.idFromName(namespace);
+    const stub = env.AgentSearch.get(id);
     
     switch (route) {
       case VectorStoreRoutes.Upsert:

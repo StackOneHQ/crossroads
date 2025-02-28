@@ -11,7 +11,7 @@ const mockQuery = vi.fn();
 
 // Mock the environment
 const mockEnv = {
-  DurableSearchAgent: {
+  AgentSearch: {
     get: mockGet,
     idFromName: mockIdFromName
   }

@@ -91,7 +91,7 @@ Response:
 
 The implementation uses the Cloudflare Agent SDK, which provides a higher-level abstraction over Durable Objects with built-in SQLite support. Key components include:
 
-1. **DurableSearchAgent**: Extends the Agent class to provide vector storage and search functionality
+1. **AgentSearch**: Extends the Agent class to provide vector storage and search functionality
 2. **SQLite Tables**: Uses two tables - `vectors` for storing vector data and `attributes` for storing metadata
 3. **REST API**: Hono-based API for interacting with the vector store
 
@@ -119,7 +119,7 @@ pnpm test
 
 The implementation includes:
 
-- Unit tests for the DurableSearchAgent class
+- Unit tests for the AgentSearch class
 - Integration tests for the API endpoints
 - Mock implementations for testing SQLite operations
 

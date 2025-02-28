@@ -1,5 +1,5 @@
 {
-  "name": "@crossroads/durable-search",
+  "name": "@crossroads/agent-search",
   "version": "0.0.1",
   "type": "module",
   "scripts": {
@@ -11,7 +11,7 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "a smol search api powered by durable objects",
+  "description": "a smol search api powered by the new agent sdk",
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "^0.6.16",
     "vitest": "2.1.8"
