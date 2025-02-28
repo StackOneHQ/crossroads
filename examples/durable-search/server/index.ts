@@ -13,7 +13,7 @@ export type Env = {
   VectorStoreAgent: AgentNamespace<VectorStoreAgent>;
 };
 
-// Define the state interface for our agent
+
 interface VectorStoreState {
   documents: Array<[string, Document]>;
 }
@@ -28,26 +28,31 @@ export class VectorStoreAgent extends Agent<Env, VectorStoreState> {
   async upsert(
     ids: string[], 
     vectors: number[][], 
-    attributes: Record<string, string[]>,
-    distanceMetric: DistanceMetric = DistanceMetric.cosine
+    attributes: Record<string, (string | null)[]>,
   ): Promise<void> {
+    console.log(`Upsert called with ${ids.length} documents`);
+    
     // Validate all arrays have the same length
     const length = ids.length;
     if (vectors.length !== length) {
+      console.error("Validation error: Vectors array length mismatch");
       throw new Error('Vectors array length must match ids length');
     }
     
     // Validate all attribute arrays have correct length
     for (const [key, values] of Object.entries(attributes)) {
       if (values.length !== length) {
+        console.error(`Validation error: Attribute "${key}" array length mismatch`);
         throw new Error(`Attribute "${key}" array length must match ids length`);
       }
     }
 
     // Get current documents from state
+    console.log("Current state documents length:", this.state?.documents?.length || 0);
     const documents = new Map(this.state.documents || []);
     
     // Store each document with its vector and attributes
+    console.log("Processing documents for upsert");
     for (let i = 0; i < length; i++) {
       // Convert attribute arrays into a single object for this document
       const documentAttributes: Record<string, string | null> = {};
@@ -62,12 +67,16 @@ export class VectorStoreAgent extends Agent<Env, VectorStoreState> {
     }
     
     // Update state with new documents using the built-in setState method
+    console.log(`Setting state with ${documents.size} documents`);
     this.setState({
       documents: Array.from(documents.entries())
     });
+    console.log("State updated successfully");
     
     // Schedule a maintenance task to run in the background
+    console.log("Scheduling maintenance task");
     await this.schedule(60, "runMaintenance", { timestamp: Date.now() });
+    console.log("Maintenance task scheduled");
   }
 
   // Query for similar vectors
@@ -77,9 +86,13 @@ export class VectorStoreAgent extends Agent<Env, VectorStoreState> {
     distanceMetric: DistanceMetric = DistanceMetric.cosine,
     filters?: Record<string, any[]> | any[]
   ): Promise<QueryResult[]> {
+    console.log(`Query called with vector of length ${queryVector.length}, topK=${topK}`);
+    console.log("Filters:", filters ? JSON.stringify(filters).substring(0, 200) + "..." : "none");
+    
     const results: QueryResult[] = [];
     const queryVec = new Float32Array(queryVector);
     const documents = new Map(this.state.documents || []);
+    console.log(`Processing query against ${documents.size} documents`);
 
     for (const [id, doc] of documents.entries()) {
       // Skip documents that don't match filters
@@ -172,6 +185,7 @@ export class VectorStoreAgent extends Agent<Env, VectorStoreState> {
       }
     }
 
+    console.log(`Query returning ${results.length} results`);
     return results
       .sort((a, b) => b.score - a.score)
       .slice(0, topK);
@@ -179,65 +193,10 @@ export class VectorStoreAgent extends Agent<Env, VectorStoreState> {
 
   // Override onStateUpdate to handle state changes
   onStateUpdate(state: VectorStoreState | undefined, source: any): void {
-    console.log(`State updated with ${state?.documents.length || 0} documents`);
+    console.log(`State updated with ${state?.documents.length || 0} documents, source:`, source);
   }
 
-  // Add a fetch method to handle HTTP requests
-  async fetch(request: Request): Promise<Response> {
-    const url = new URL(request.url);
-    const path = url.pathname;
 
-    console.log(`Agent received request: ${request.method} ${path}`);
-
-    try {
-      // Handle different routes
-      if (request.method === 'POST' && path.includes('/upsert')) {
-        const body = await request.json();
-        const parsedBody = upsertSchema.parse(body);
-        
-        await this.upsert(
-          parsedBody.ids,
-          parsedBody.vectors,
-          parsedBody.attributes,
-          parsedBody.distance_metric
-        );
-        
-        return Response.json({
-          success: true,
-          message: "Upserted",
-          documentCount: this.state.documents.length
-        });
-      } 
-      else if (request.method === 'POST' && path.includes('/query')) {
-        const body = await request.json();
-        const parsedBody = querySchema.parse(body);
-        
-        const results = await this.query(
-          parsedBody.vector,
-          parsedBody.top_k,
-          parsedBody.distance_metric,
-          parsedBody.filters
-        );
-        
-        return Response.json(results);
-      } 
-      else if (request.method === 'GET' && path.includes('/stats')) {
-        return Response.json(await this.getStats());
-      } 
-      else {
-        return Response.json({
-          success: false,
-          message: "Route not found"
-        }, { status: 404 });
-      }
-    } catch (error) {
-      console.error("Error handling request:", error);
-      return Response.json({
-        success: false,
-        message: error instanceof Error ? error.message : "Unknown error"
-      }, { status: 400 });
-    }
-  }
 
   // Get the number of documents in the store
   async getStats(): Promise<{ documentCount: number; status: string }> {
@@ -270,7 +229,6 @@ export class VectorStoreAgent extends Agent<Env, VectorStoreState> {
   }
 }
 
-// Create Hono app with agent router
 const app = new Hono<{ Bindings: Env }>();
 
 
@@ -280,6 +238,7 @@ enum VectorStoreRoutes {
   Stats = "stats"
 }
 
+// Routes
 app.post("/v1/namespaces/:namespace", async (c) => {
   const namespace = c.req.param("namespace");
 
@@ -341,13 +300,15 @@ export async function routeVectorStoreRequest(
   
   try {
     // Use idFromName to get the Durable Object ID
+    console.log("Attempting to create ID from namespace:", namespace);
     const id = env.VectorStoreAgent.idFromName(namespace);
     
     console.log("ID created successfully:", id);
+    console.log("Getting stub for ID:", id.toString());
     const stub = env.VectorStoreAgent.get(id);
     
-    console.log("Stub created successfully");
-
+    console.log("Stub created successfully, stub methods:", Object.getOwnPropertyNames(Object.getPrototypeOf(stub)));
+    
     switch (route) {
       case VectorStoreRoutes.Upsert:
         try {
@@ -359,8 +320,7 @@ export async function routeVectorStoreRequest(
             await stub.upsert(
               parsedBody.ids,
               parsedBody.vectors,
-              parsedBody.attributes,
-              parsedBody.distance_metric
+              parsedBody.attributes
             );
             
             return Response.json({
@@ -402,6 +362,7 @@ export async function routeVectorStoreRequest(
       case VectorStoreRoutes.Stats:
         return Response.json(await stub.getStats());
       default:
+        console.log("Unknown route:", route);
         return new Response("Not found", { status: 404 });
     }
   } catch (error) {

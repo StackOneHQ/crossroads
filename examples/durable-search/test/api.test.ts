@@ -25,7 +25,7 @@ describe('API Integration Tests', () => {
   
   describe('Upsert Endpoint', () => {
     it('should successfully upsert documents', async () => {
-      const response = await app.request(`/v1/namespaces/${namespace}/upsert`, {
+      const response = await app.request(`/v1/namespaces/${namespace}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -39,8 +39,7 @@ describe('API Integration Tests', () => {
           attributes: {
             title: ['First Document', 'Second Document'],
             category: ['A', 'B'],
-          },
-          distance_metric: "cosine"
+          }
         }),
       }, env);
       
@@ -52,7 +51,7 @@ describe('API Integration Tests', () => {
     
     it('should reject invalid upsert requests', async () => {
       // Missing vectors
-      const response = await app.request(`/v1/namespaces/${namespace}/upsert`, {
+      const response = await app.request(`/v1/namespaces/${namespace}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -62,8 +61,7 @@ describe('API Integration Tests', () => {
           // vectors missing
           attributes: {
             title: ['First Document'],
-          },
-          distance_metric: "cosine"
+          }
         }),
       }, env);
       
@@ -74,7 +72,7 @@ describe('API Integration Tests', () => {
   describe('Query Endpoint', () => {
     // Insert test data before querying
     beforeEach(async () => {
-      await app.request(`/v1/namespaces/${namespace}/upsert`, {
+      await app.request(`/v1/namespaces/${namespace}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -89,8 +87,7 @@ describe('API Integration Tests', () => {
           attributes: {
             title: ['First Document', 'Second Document', 'Third Document'],
             category: ['A', 'B', 'C'],
-          },
-          distance_metric: "cosine"
+          }
         }),
       }, env);
     });
@@ -167,7 +164,7 @@ describe('API Integration Tests', () => {
   describe('Direct Agent Access', () => {
     it('should allow direct access to the agent', async () => {
       // First, insert some data
-      await app.request(`/v1/namespaces/${namespace}/upsert`, {
+      const res = await app.request(`/v1/namespaces/${namespace}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -180,10 +177,11 @@ describe('API Integration Tests', () => {
           ],
           attributes: {
             title: ['Direct Access 1', 'Direct Access 2'],
-          },
-          distance_metric: "cosine"
+          }
         }),
       }, env);
+
+      console.log(res);
       
       // Now access the agent directly via stats endpoint
       const response = await app.request(`/v1/namespaces/${namespace}/stats`, {
