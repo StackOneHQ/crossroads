@@ -8,6 +8,10 @@
       {
         "name": "DurableSearch",
         "class_name": "DurableSearch"
+      },
+      {
+        "name": "VectorStoreAgent",
+        "class_name": "VectorStoreAgent"
       }
     ]
   },
@@ -15,6 +19,10 @@
     {
       "tag": "v1",
       "new_classes": ["DurableSearch"]
+    },
+    {
+      "tag": "v2",
+      "new_sqlite_classes": ["VectorStoreAgent"]
     }
   ]
 }

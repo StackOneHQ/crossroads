@@ -22,7 +22,7 @@ export const upsertSchema = z.object({
   vectors: z.array(z.array(z.number())),
   attributes: z.record(z.string(), z.array(z.string())),
   distance_metric: z.nativeEnum(DistanceMetric),
-  schema: SchemaDefinitionSchema
+  schema: SchemaDefinitionSchema.optional()
 });
 
 export const querySchema = z.object({

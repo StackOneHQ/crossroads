@@ -13,10 +13,12 @@
   "license": "ISC",
   "description": "a smol search api powered by durable objects",
   "devDependencies": {
-    "vitest": "2.1.8",
-    "@cloudflare/vitest-pool-workers": "^0.6.16"
+    "@cloudflare/vitest-pool-workers": "^0.6.16",
+    "vitest": "2.1.8"
   },
   "dependencies": {
-    "partyserver": "^0.0.64"
+    "agents-sdk": "^0.0.22",
+    "hono": "^4.7.2",
+    "hono-agents": "^0.0.10"
   }
 }
