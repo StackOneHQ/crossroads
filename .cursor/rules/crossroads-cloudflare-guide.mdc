@@ -1,0 +1,218 @@
+---
+description: Cloudflare Development Platform Guidelines
+globs: *.ts
+alwaysApply: false
+---
+# Cloudflare Development Platform Guidelines for CrossRoads
+
+This document provides guidelines for working with Cloudflare Workers and Durable Objects in the CrossRoads repository.
+
+<rule>
+name: crossroads_cloudflare_guide
+description: Guidelines for working with Cloudflare Workers and Durable Objects in the CrossRoads repository
+
+filters:
+  - type: event
+    pattern: "file_create|file_modify"
+  - type: file_path
+    pattern: "packages/.*|examples/.*"
+  - type: file_extension
+    pattern: "\\.ts$|\\.js$"
+
+actions:
+  - type: suggest
+    message: |
+      # Cloudflare Development Platform Guidelines for CrossRoads
+
+      ## Overview
+      
+      CrossRoads is built on Cloudflare's Developer Platform, focusing on:
+      
+      - Cloudflare Workers for serverless execution
+      - Durable Objects for stateful applications
+      - Agent SDK for building AI-powered agents
+      
+      ## Cloudflare Workers
+
+      ### Structure
+      
+      Workers typically follow this structure:
+      
+      ```typescript
+      // Worker entry point
+      export default {
+        async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+          // Handle request
+        }
+      };
+      
+      // Environment interface
+      export interface Env {
+        // Bindings defined in wrangler.toml
+        MY_DURABLE_OBJECT: DurableObjectNamespace;
+        MY_KV: KVNamespace;
+        // etc.
+      }
+      ```
+
+      ### Best Practices
+      
+      1. Use TypeScript for type safety
+      2. Define proper environment interfaces
+      3. Use arrow functions with explicit return types
+      4. Leverage Cloudflare's built-in APIs (Workers KV, D1, R2, etc.)
+      5. Handle errors gracefully with appropriate status codes
+
+      ## Durable Objects
+
+      ### Structure
+      
+      Durable Objects typically follow this structure:
+      
+      ```typescript
+      import { DurableObject } from "cloudflare:workers";
+      
+      export class MyDurableObject extends DurableObject<Env> {
+        constructor(state: DurableObjectState, env: Env) {
+          super(state, env);
+        }
+        
+        // Handle HTTP requests
+        async fetch(request: Request): Promise<Response> {
+          // Process request
+        }
+        
+        // Custom methods
+        async customMethod(): Promise<void> {
+          // Access storage
+          await this.ctx.storage.put('key', 'value');
+        }
+      }
+      ```
+
+      ### State Management
+      
+      Durable Objects provide two ways to manage state:
+      
+      1. **In-memory state**: Fast but lost on instance shutdown
+         ```typescript
+         private myState: Map<string, any> = new Map();
+         ```
+      
+      2. **Persistent storage**: Durable but with higher latency
+         ```typescript
+         // Write
+         await this.ctx.storage.put('key', value);
+         
+         // Read
+         const value = await this.ctx.storage.get('key');
+         
+         // Delete
+         await this.ctx.storage.delete('key');
+         ```
+
+      ## Agent SDK
+
+      The Agent SDK provides a higher-level abstraction over Durable Objects for building AI agents:
+      
+      ```typescript
+      import { Agent } from "agents-sdk";
+      
+      export class MyAgent extends Agent<Env> {
+        // Handle WebSocket connections
+        async onConnect(connection: Connection): Promise<void> {
+          // Handle new connection
+        }
+        
+        // Handle WebSocket messages
+        async onMessage(connection: Connection, message: string | ArrayBuffer): Promise<void> {
+          // Process message
+        }
+        
+        // Handle state updates
+        async onStateUpdate(state: any): Promise<void> {
+          // React to state changes
+        }
+      }
+      ```
+
+      ### State Management with Agent SDK
+      
+      The Agent SDK provides a simplified state management API:
+      
+      ```typescript
+      // Update state
+      this.setState({
+        ...this.state,
+        counter: this.state.counter + 1,
+      });
+      
+      // Access state
+      const currentCount = this.state.counter;
+      
+      // Direct SQL access if needed
+      const results = await this.sql`SELECT * FROM my_table`;
+      ```
+
+      ## Development and Testing
+
+      ### Local Development
+      
+      Use Wrangler for local development:
+      
+      ```bash
+      # Start local development server
+      pnpm --filter <package-name> dev
+      
+      # Deploy to Cloudflare
+      pnpm --filter <package-name> deploy
+      ```
+
+      ### Testing
+      
+      Use Vitest with the Cloudflare Workers pool for testing:
+      
+      ```typescript
+      import { describe, it, expect } from 'vitest';
+      
+      describe('My Worker', () => {
+        it('handles requests correctly', async () => {
+          // Test implementation
+        });
+      });
+      ```
+
+examples:
+  - input: |
+      // Bad: No type safety
+      export default {
+        async fetch(request, env, ctx) {
+          return new Response("Hello");
+        }
+      };
+    output: |
+      // Good: Using TypeScript with proper types
+      export default {
+        async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+          return new Response("Hello");
+        }
+      };
+  - input: |
+      // Bad: Using function declaration and no return type
+      export class MyDurableObject extends DurableObject {
+        async fetch(request) {
+          // Implementation
+        }
+      }
+    output: |
+      // Good: Using proper typing
+      export class MyDurableObject extends DurableObject<Env> {
+        async fetch(request: Request): Promise<Response> {
+          // Implementation
+        }
+      }
+
+metadata:
+  priority: high
+  version: 1.0
+</rule> 
