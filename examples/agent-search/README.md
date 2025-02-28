@@ -1,6 +1,6 @@
 # Durable Search
 
-A vector search implementation using Cloudflare Durable Objects and the Agent SDK.
+A turbopuffer-esque vector search api using Cloudflare Durable Objects and the Agent SDK.
 
 ## Overview
 
@@ -39,11 +39,6 @@ Request body:
   "attributes": {
     "title": ["First Document", "Second Document"],
     "category": ["A", "B"]
-  },
-  "distance_metric": "cosine",
-  "schema": {
-    "title": { "type": "string" },
-    "category": { "type": "string" }
   }
 }
 ```
@@ -87,14 +82,6 @@ Response:
 ]
 ```
 
-## Implementation Details
-
-The implementation uses the Cloudflare Agent SDK, which provides a higher-level abstraction over Durable Objects with built-in SQLite support. Key components include:
-
-1. **AgentSearch**: Extends the Agent class to provide vector storage and search functionality
-2. **SQLite Tables**: Uses two tables - `vectors` for storing vector data and `attributes` for storing metadata
-3. **REST API**: Hono-based API for interacting with the vector store
-
 ## Development
 
 ### Prerequisites
@@ -136,3 +123,13 @@ Deploy to Cloudflare Workers:
 ```bash
 pnpm deploy
 ```
+
+### Scripts
+
+```bash
+bun run scripts/upsert.ts
+bun run scripts/query.ts
+bun run scripts/delete.ts
+```
+
+These run on against the local server (localhost:8787)

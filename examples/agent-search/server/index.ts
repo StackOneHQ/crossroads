@@ -13,15 +13,27 @@ export type Env = {
   AgentSearch: AgentNamespace<AgentSearch>;
 };
 
-
+// Enhanced state interface with cursor support
 interface VectorStoreState {
   documents: Array<[string, Document]>;
+  // Track the last cursor for pagination
+  lastCursor?: string;
+  // Track when the index was last persisted to storage
+  lastPersisted?: number;
+  // Track total vector count for stats
+  totalVectorCount: number;
 }
+
+// Batch size for storage operations
+const STORAGE_BATCH_SIZE = 1000;
+// Maximum results per query page
+const MAX_RESULTS_PER_PAGE = 100;
 
 export class AgentSearch extends Agent<Env, VectorStoreState> {
   // Set initial state
   initialState: VectorStoreState = {
-    documents: []
+    documents: [],
+    totalVectorCount: 0
   };
   
   // Helper method to ensure vector is a Float32Array
@@ -52,10 +64,105 @@ export class AgentSearch extends Agent<Env, VectorStoreState> {
     throw new Error(`Cannot convert to Float32Array: ${typeof vector}`);
   }
   
+  // Persist the entire index to storage in batches
+  private async persistIndex(): Promise<void> {
+    console.log(`Persisting index with ${this.state.documents.length} documents`);
+    
+    // Store the entire index as a single compressed blob
+    // This is much more efficient than storing individual vectors
+    try {
+      // Split into batches to avoid storage limits
+      const batches: Array<Array<[string, Document]>> = [];
+      const documents = this.state.documents;
+      
+      for (let i = 0; i < documents.length; i += STORAGE_BATCH_SIZE) {
+        batches.push(documents.slice(i, i + STORAGE_BATCH_SIZE));
+      }
+      
+      console.log(`Split index into ${batches.length} batches`);
+      
+      // Store each batch with a batch index
+      const storePromises = batches.map((batch, index) => 
+        this.ctx.storage.put(`index_batch_${index}`, batch)
+      );
+      
+      // Store batch count for loading
+      await this.ctx.storage.put('index_batch_count', batches.length);
+      
+      // Wait for all batches to be stored
+      await Promise.all(storePromises);
+      
+      // Update state to track when we last persisted
+      this.setState({
+        ...this.state,
+        lastPersisted: Date.now()
+      });
+      
+      console.log(`Successfully persisted index in ${batches.length} batches`);
+    } catch (error) {
+      console.error("Error persisting index:", error);
+      throw new Error(`Failed to persist index: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+  
+  // Load the index from storage
+  private async loadIndex(): Promise<Array<[string, Document]>> {
+    try {
+      // Get the number of batches
+      const batchCount = await this.ctx.storage.get('index_batch_count') as number;
+      
+      if (!batchCount) {
+        console.log("No index found in storage");
+        return [];
+      }
+      
+      console.log(`Loading index from ${batchCount} batches`);
+      
+      // Load all batches in parallel
+      const batchPromises = Array.from({ length: batchCount }, (_, index) => 
+        this.ctx.storage.get(`index_batch_${index}`) as Promise<Array<[string, Document]>>
+      );
+      
+      const batches = await Promise.all(batchPromises);
+      
+      // Combine all batches
+      const documents = batches.flat();
+      console.log(`Loaded ${documents.length} documents from storage`);
+      
+      return documents;
+    } catch (error) {
+      console.error("Error loading index:", error);
+      return [];
+    }
+  }
+  
+  // Initialize the agent - load index from storage if available
+  async initialize(): Promise<void> {
+    console.log("Initializing AgentSearch");
+    
+    // Load the index from storage if we don't have it in memory
+    if (this.state.documents.length === 0) {
+      const documents = await this.loadIndex();
+      
+      if (documents.length > 0) {
+        this.setState({
+          documents,
+          totalVectorCount: documents.length,
+          lastPersisted: Date.now()
+        });
+        console.log(`Initialized with ${documents.length} documents from storage`);
+      } else {
+        console.log("No documents found in storage, starting with empty index");
+      }
+    } else {
+      console.log(`Already initialized with ${this.state.documents.length} documents in memory`);
+    }
+  }
+  
   // Upsert documents with vectors and attributes
   async upsert(
     ids: string[], 
-    vectors: number[][], 
+    vectors: (number[] | null)[], 
     attributes: Record<string, (string | null)[]>,
   ): Promise<void> {
     console.log(`Upsert called with ${ids.length} documents`);
@@ -82,29 +189,40 @@ export class AgentSearch extends Agent<Env, VectorStoreState> {
     // Store each document with its vector and attributes
     console.log("Processing documents for upsert");
     for (let i = 0; i < length; i++) {
-      // Convert attribute arrays into a single object for this document
-      const documentAttributes: Record<string, string | null> = {};
-      for (const [key, values] of Object.entries(attributes)) {
-        documentAttributes[key] = values[i];
+      const vector = vectors[i];
+      
+      if (vector === null) {
+        // If vector is null, delete the document
+        console.log(`Deleting document with ID: ${ids[i]}`);
+        documents.delete(ids[i]);
+      } else {
+        // Convert attribute arrays into a single object for this document
+        const documentAttributes: Record<string, string | null> = {};
+        for (const [key, values] of Object.entries(attributes)) {
+          documentAttributes[key] = values[i];
+        }
+
+        // Create a Float32Array for the vector
+        const vectorArray = this.ensureFloat32Array(vector);
+
+        documents.set(ids[i], {
+          vector: vectorArray,
+          attributes: documentAttributes
+        });
       }
-
-      // Create a Float32Array for the vector
-      // Note: When this is serialized to JSON, it will become an object with numeric keys
-      // We handle this in the query method
-      const vectorArray = this.ensureFloat32Array(vectors[i]);
-
-      documents.set(ids[i], {
-        vector: vectorArray,
-        attributes: documentAttributes
-      });
     }
     
     // Update state with new documents using the built-in setState method
     console.log(`Setting state with ${documents.size} documents`);
     this.setState({
-      documents: Array.from(documents.entries())
+      documents: Array.from(documents.entries()),
+      totalVectorCount: documents.size
     });
     console.log("State updated successfully");
+    
+    // Always persist after upsert to prevent data loss when the object hibernates
+    console.log("Persisting index to storage to prevent data loss on hibernation");
+    await this.persistIndex();
     
     // Schedule a maintenance task to run in the background
     console.log("Scheduling maintenance task");
@@ -112,22 +230,48 @@ export class AgentSearch extends Agent<Env, VectorStoreState> {
     console.log("Maintenance task scheduled");
   }
 
-  // Query for similar vectors
+  // Query for similar vectors with cursor-based pagination
   async query(
     queryVector: number[], 
     topK = 10, 
     distanceMetric: DistanceMetric = DistanceMetric.cosine,
-    filters?: Record<string, any[]> | any[]
-  ): Promise<QueryResult[]> {
-    console.log(`Query called with vector of length ${queryVector.length}, topK=${topK}`);
+    filters?: Record<string, any[]> | any[],
+    cursor?: string
+  ): Promise<{
+    results: QueryResult[],
+    next_cursor?: string
+  }> {
+    console.log(`Query called with vector of length ${queryVector.length}, topK=${topK}, cursor=${cursor || 'none'}`);
     console.log("Filters:", filters ? JSON.stringify(filters).substring(0, 200) + "..." : "none");
     
-    const results: QueryResult[] = [];
+    // Limit topK to prevent excessive memory usage
+    const effectiveTopK = Math.min(topK, MAX_RESULTS_PER_PAGE);
+    
+    // Parse cursor if provided
+    let startIndex = 0;
+    if (cursor) {
+      try {
+        startIndex = parseInt(cursor, 10);
+        if (isNaN(startIndex) || startIndex < 0) {
+          startIndex = 0;
+        }
+      } catch (e) {
+        startIndex = 0;
+      }
+    }
+    
+    const allResults: QueryResult[] = [];
     const queryVec = this.ensureFloat32Array(queryVector);
     const documents = new Map(this.state.documents || []);
-    console.log(`Processing query against ${documents.size} documents`);
+    console.log(`Processing query against ${documents.size} documents starting at index ${startIndex}`);
 
-    for (const [id, doc] of documents.entries()) {
+    // Convert documents to array for easier pagination
+    const documentEntries = Array.from(documents.entries());
+    
+    // Process documents from the cursor position
+    for (let i = startIndex; i < documentEntries.length; i++) {
+      const [id, doc] = documentEntries[i];
+      
       // Skip documents that don't match filters
       if (filters) {
         if (Array.isArray(filters)) {
@@ -218,7 +362,8 @@ export class AgentSearch extends Agent<Env, VectorStoreState> {
         }
         
         const score = cosineSimilarity(queryVec, docVector);
-        results.push({ 
+        
+        allResults.push({ 
           id, 
           score,
           attributes: doc.attributes 
@@ -228,10 +373,32 @@ export class AgentSearch extends Agent<Env, VectorStoreState> {
       }
     }
 
-    console.log(`Query returning ${results.length} results`);
-    return results
-      .sort((a, b) => b.score - a.score)
-      .slice(0, topK);
+    // Sort by score (descending)
+    allResults.sort((a, b) => b.score - a.score);
+    
+    // Get the top K results for this page
+    const pageResults = allResults.slice(0, effectiveTopK);
+    
+    // Calculate next cursor if there are more results
+    let nextCursor: string | undefined = undefined;
+    if (allResults.length > effectiveTopK) {
+      nextCursor = (startIndex + effectiveTopK).toString();
+    }
+    
+    console.log(`Query returning ${pageResults.length} results, next_cursor=${nextCursor || 'none'}`);
+    
+    // Update the last cursor in state
+    if (nextCursor) {
+      this.setState({
+        ...this.state,
+        lastCursor: nextCursor
+      });
+    }
+    
+    return {
+      results: pageResults,
+      next_cursor: nextCursor
+    };
   }
 
   // Override onStateUpdate to handle state changes
@@ -239,10 +406,17 @@ export class AgentSearch extends Agent<Env, VectorStoreState> {
     console.log(`State updated with ${state?.documents.length || 0} documents, source:`, source);
   }
 
-
-
   // Get the number of documents in the store
-  async getStats(): Promise<{ documentCount: number; status: string; vectorFormats?: any }> {
+  async getStats(): Promise<{ 
+    documentCount: number; 
+    status: string; 
+    vectorFormats?: any;
+    lastPersisted?: string;
+    storageUsage?: {
+      batches: number;
+      estimatedSize: string;
+    }
+  }> {
     // Sample a few documents to check vector formats
     const vectorFormats = this.state.documents.slice(0, 3).map(([id, doc]) => {
       let vectorSample: any = null;
@@ -263,15 +437,36 @@ export class AgentSearch extends Agent<Env, VectorStoreState> {
       };
     });
     
+    // Get storage usage info
+    let storageUsage = undefined;
+    try {
+      const batchCount = await this.ctx.storage.get('index_batch_count') as number;
+      if (batchCount) {
+        // Estimate size based on document count and average vector size
+        const avgDocSize = 500; // bytes, rough estimate
+        const estimatedSize = (this.state.documents.length * avgDocSize) / (1024 * 1024);
+        
+        storageUsage = {
+          batches: batchCount,
+          estimatedSize: `~${estimatedSize.toFixed(2)} MB`
+        };
+      }
+    } catch (e) {
+      console.error("Error getting storage usage:", e);
+    }
+    
     return {
       documentCount: this.state.documents.length,
       status: "healthy",
-      vectorFormats
+      vectorFormats,
+      lastPersisted: this.state.lastPersisted ? new Date(this.state.lastPersisted).toISOString() : undefined,
+      storageUsage
     };
   }
   
   // Maintenance task that runs periodically
-  async runMaintenance(data: { timestamp: number }): Promise<void> {
+  async runMaintenance(data: { timestamp: number, forcePersist?: boolean }): Promise<void> {
+    console.log("Running maintenance task");
     
     // Example: Use SQL to store some metrics
     this.sql`
@@ -383,10 +578,13 @@ const routeVectorStoreRequest = async (
     const id = env.AgentSearch.idFromName(namespace);
     const stub = env.AgentSearch.get(id);
     
+    // Initialize the agent if needed
+    await stub.initialize();
+    
     switch (route) {
       case VectorStoreRoutes.Upsert:
         try {
-          const body = await req.json();
+          const body = await req.json() as any;
           
           try {
             const parsedBody = upsertSchema.parse(body);
@@ -418,17 +616,21 @@ const routeVectorStoreRequest = async (
         return Response.json(await stub.getState());
       case VectorStoreRoutes.Query:
         try {
-          const body = await req.json();
+          const body = await req.json() as any;
           const parsedBody = querySchema.parse(body);
           
-          const results = await stub.query(
+          // Extract cursor from request if present
+          const cursor = 'cursor' in body ? String(body.cursor) : undefined;
+          
+          const queryResponse = await stub.query(
             parsedBody.vector,
             parsedBody.top_k,
             parsedBody.distance_metric,
-            parsedBody.filters
+            parsedBody.filters,
+            cursor
           );
           
-          return Response.json(results);
+          return Response.json(queryResponse);
         } catch (error) {
           return Response.json({
             success: false,

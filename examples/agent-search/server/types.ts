@@ -21,7 +21,7 @@ export type SchemaDefinition = z.infer<typeof SchemaDefinitionSchema>;
 
 export const upsertSchema = z.object({
   ids: z.array(z.string()),
-  vectors: z.array(z.array(z.number())),
+  vectors: z.array(z.union([z.array(z.number()), z.null()])),
   attributes: z.record(z.string(), z.array(z.string().nullable())),
 });
 
