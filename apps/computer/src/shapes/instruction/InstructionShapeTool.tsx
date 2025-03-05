@@ -1,10 +1,10 @@
 import { BaseBoxShapeTool } from 'tldraw'
 
 export class InstructionTool extends BaseBoxShapeTool {
-  static override id = 'instruction-block'
+  static override id = 'instruction'
   static override initial = 'idle'
   
-  override shapeType = 'instruction-block'
+  override shapeType = 'instruction'
 
   getShapeProps() {
     return {

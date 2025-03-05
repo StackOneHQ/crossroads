@@ -29,7 +29,7 @@ const FONT_SIZES: Record<TLDefaultSizeStyle, number> = {
 
 // Type definition for the instruction block shape
 export type InstructionShape = TLBaseShape<
-  'instruction-block',
+  'instruction',
   {
     w: number
     h: number
@@ -70,7 +70,7 @@ export const instructionShapeMigrations = {
 
 // Instruction block shape utility class
 export class InstructionShapeUtil extends ShapeUtil<InstructionShape> {
-  static override type = 'instruction-block' as const
+  static override type = 'instruction' as const
   static override props = instructionShapeProps
   static override migrations = instructionShapeMigrations
 
@@ -132,7 +132,7 @@ export class InstructionShapeUtil extends ShapeUtil<InstructionShape> {
       const editor = this.editor
       editor.updateShape<InstructionShape>({
         id: shape.id,
-        type: 'instruction-block',
+        type: 'instruction',
         props: {
           prompt: e.target.value,
         },

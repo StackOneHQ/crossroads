@@ -12,13 +12,22 @@ import {
 
 export const uiOverrides: TLUiOverrides = {
   tools(editor, tools) {    
-    tools['instruction-block'] = {
-      id: 'instruction-block',
+    tools['instruction'] = {
+      id: 'instruction',
       icon: 'color',
-      label: 'Instruction Block',
+      label: 'Instruction',
       kbd: 'g',
       onSelect: () => {
-        editor.setCurrentTool('instruction-block')
+        editor.setCurrentTool('instruction')
+      },
+    }
+    tools['button'] = {
+      id: 'button',
+      icon: 'play',
+      label: 'Button',
+      kbd: 'b',
+      onSelect: () => {
+        editor.setCurrentTool('button')
       },
     }
     return tools
@@ -28,11 +37,12 @@ export const uiOverrides: TLUiOverrides = {
 export const components: TLComponents = {
   Toolbar: (props) => {
     const tools = useTools()
-    const isInstructionBlockSelected = useIsToolSelected(tools['instruction-block'])
-    
+    const isInstructionSelected = useIsToolSelected(tools['instruction'])
+    const isButtonSelected = useIsToolSelected(tools['button'])
     return (
       <DefaultToolbar {...props}>
-        <TldrawUiMenuItem {...tools['instruction-block']} isSelected={isInstructionBlockSelected} />
+        <TldrawUiMenuItem {...tools['instruction']} isSelected={isInstructionSelected} />
+        <TldrawUiMenuItem {...tools['button']} isSelected={isButtonSelected} />
         <DefaultToolbarContent />
       </DefaultToolbar>
     )
@@ -41,7 +51,8 @@ export const components: TLComponents = {
     const tools = useTools()
     return (
       <DefaultKeyboardShortcutsDialog {...props}>
-        <TldrawUiMenuItem {...tools['instruction-block']} />
+        <TldrawUiMenuItem {...tools['instruction']} />
+        <TldrawUiMenuItem {...tools['button']} />
         <DefaultKeyboardShortcutsDialogContent />
       </DefaultKeyboardShortcutsDialog>
     )

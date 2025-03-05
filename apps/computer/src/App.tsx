@@ -12,6 +12,11 @@ const App = (): JSX.Element => {
         overrides={uiOverrides}
         components={components}
         autoFocus
+        assetUrls={{
+					icons: {
+						'play': '/play-icon.svg',
+					},
+				}}
       />
     </div>
   );
