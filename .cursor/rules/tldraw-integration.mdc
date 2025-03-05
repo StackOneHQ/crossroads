@@ -1,0 +1,310 @@
+---
+description:  This guide documents best practices and patterns for working with tldraw in our project.
+globs: apps/computer/
+alwaysApply: false
+---
+# Tldraw Integration Guide
+
+This guide documents best practices and patterns for working with tldraw in our project.
+
+## Custom Shapes
+
+### Shape Definition
+
+When creating a custom shape in tldraw:
+
+1. Define a shape type that extends `TLBaseShape`:
+
+```typescript
+export type CustomShape = TLBaseShape<
+  "custom-shape-type",
+  {
+    w: number;
+    h: number;
+    // Add custom properties here
+    prompt: string;
+    // Use tldraw's default styles for consistent UI
+    size: TLDefaultSizeStyle;
+    color: TLDefaultColorStyle;
+    font: TLDefaultFontStyle;
+  }
+>;
+```
+
+2. Define props validation:
+
+```typescript
+export const customShapeProps: RecordProps<CustomShape> = {
+  w: T.number,
+  h: T.number,
+  prompt: T.string,
+  size: DefaultSizeStyle,
+  color: DefaultColorStyle,
+  font: DefaultFontStyle,
+};
+```
+
+3. Create migrations for version control:
+
+```typescript
+export const customShapeMigrations = {
+  firstVersion: 1,
+  currentVersion: 1,
+  migrators: {
+    1: {
+      up: (record: TLRecord) => {
+        return record;
+      },
+      down: (record: TLRecord) => {
+        return record;
+      },
+    },
+  },
+};
+```
+
+### Shape Utility Class
+
+Create a ShapeUtil class to define behavior and rendering:
+
+```typescript
+export class CustomShapeUtil extends ShapeUtil<CustomShape> {
+  static override type = "custom-shape-type" as const;
+  static override props = customShapeProps;
+  static override migrations = customShapeMigrations;
+
+  // Define if aspect ratio should be locked during resize
+  override isAspectRatioLocked = (_shape: CustomShape): boolean => {
+    return false;
+  };
+
+  // Define if shape can be resized
+  override canResize = (_shape: CustomShape): boolean => {
+    return true;
+  };
+
+  // Define if shape can be edited
+  override canEdit = (): boolean => {
+    return true;
+  };
+
+  // Default properties when creating a new shape
+  getDefaultProps = (): CustomShape["props"] => {
+    return {
+      w: 300,
+      h: 200,
+      prompt: "Default text",
+      size: "m",
+      color: "black",
+      font: "draw",
+    };
+  };
+
+  // Define shape geometry
+  getGeometry = (shape: CustomShape) => {
+    return new Rectangle2d({
+      width: shape.props.w,
+      height: shape.props.h,
+      isFilled: true,
+    });
+  };
+
+  // Define shape rendering
+  component = (shape: CustomShape) => {
+    // Component implementation
+  };
+
+  // Define shape indicator (selection outline)
+  indicator = (shape: CustomShape) => {
+    return <rect width={shape.props.w} height={shape.props.h} rx={8} ry={8} />;
+  };
+
+  // Handle resize operations
+  override onResize = (shape: CustomShape, info: TLResizeInfo<CustomShape>) => {
+    return resizeBox(shape, info);
+  };
+}
+```
+
+## Using Tldraw Styles
+
+### Font Styles
+
+To use tldraw's font styles:
+
+1. Import the necessary types and styles:
+
+```typescript
+import {
+  DefaultFontStyle,
+  TLDefaultFontStyle,
+  useDefaultColorTheme,
+} from "tldraw";
+```
+
+2. Create a helper function to map font styles to CSS variables:
+
+```typescript
+const getFontFamily = (font: TLDefaultFontStyle) => {
+  switch (font) {
+    case "draw":
+      return "var(--tl-font-draw)";
+    case "sans":
+      return "var(--tl-font-sans)";
+    case "serif":
+      return "var(--tl-font-serif)";
+    case "mono":
+      return "var(--tl-font-mono)";
+    default:
+      return "var(--tl-font-sans)";
+  }
+};
+```
+
+3. Apply the font family to elements:
+
+```typescript
+<div style={{ fontFamily: getFontFamily(font) }}>Text with tldraw font</div>
+```
+
+### Color Styles
+
+To use tldraw's color styles:
+
+1. Get the theme using the `useDefaultColorTheme` hook:
+
+```typescript
+const theme = useDefaultColorTheme();
+```
+
+2. Apply colors from the theme:
+
+```typescript
+<div
+  style={{
+    color: theme[color].solid,
+    backgroundColor: theme.background,
+    border: `2px solid ${theme[color].solid}`,
+  }}
+>
+  Colored element
+</div>
+```
+
+3. For dark mode support:
+
+```typescript
+const isDarkMode = useValue('isDarkMode', () => editor.user.getIsDarkMode(), [])
+
+// Then use it in styles
+<div style={{
+  backgroundColor: isDarkMode ? 'rgba(0,0,0,0.2)' : 'white'
+}}>
+  Dark mode aware element
+</div>
+```
+
+### Size Styles
+
+To use tldraw's size styles:
+
+1. Define a mapping for sizes:
+
+```typescript
+const FONT_SIZES: Record<TLDefaultSizeStyle, number> = {
+  s: 14,
+  m: 18,
+  l: 24,
+  xl: 32,
+};
+```
+
+2. Apply sizes based on the selected style:
+
+```typescript
+<div style={{ fontSize: FONT_SIZES[size] }}>Text with tldraw size</div>
+```
+
+## Editing Behavior
+
+To make shapes editable:
+
+1. Detect editing state:
+
+```typescript
+const isEditing = editor.getEditingShapeId() === shape.id;
+```
+
+2. Add click handler to enter edit mode:
+
+```typescript
+const handleContainerClick = (e: React.MouseEvent) => {
+  if (!isEditing) {
+    e.stopPropagation();
+    editor.select(shape.id);
+    editor.setEditingShape(shape.id);
+  }
+};
+```
+
+3. Configure editable elements:
+
+```typescript
+<textarea
+  value={text}
+  onChange={handleTextChange}
+  readOnly={!isEditing}
+  autoFocus={isEditing}
+  onFocus={(e) => {
+    if (isEditing) {
+      e.currentTarget.select();
+    }
+  }}
+  onClick={(e) => e.stopPropagation()}
+/>
+```
+
+4. Prevent event propagation:
+
+```typescript
+<HTMLContainer
+  id={shape.id}
+  onClick={handleContainerClick}
+  onPointerDown={stopEventPropagation}
+>
+  {/* Container content */}
+</HTMLContainer>
+```
+
+## Event Handling
+
+1. Update shape properties:
+
+```typescript
+const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  editor.updateShape<CustomShape>({
+    id: shape.id,
+    type: "custom-shape-type",
+    props: {
+      text: e.target.value,
+    },
+  });
+};
+```
+
+2. Stop event propagation to prevent unwanted behavior:
+
+```typescript
+onClick={(e) => e.stopPropagation()}
+```
+
+## Best Practices
+
+1. Always use tldraw's built-in styles when possible for consistency
+2. Provide proper indicator for selection feedback
+3. Handle dark mode appropriately
+4. Use proper event handling to prevent propagation issues
+5. Implement proper editing behavior with focus and selection
+6. Use CSS variables from tldraw for fonts and colors
+7. Provide appropriate cursor feedback (text cursor for editing, pointer for clicking)
+8. Scale font sizes proportionally based on the selected size style

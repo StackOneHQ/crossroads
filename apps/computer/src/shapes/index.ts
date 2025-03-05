@@ -1,39 +1,22 @@
-import { DataShape, DataShapeUtil } from './data/DataShape';
-import { GenerateShape, GenerateShapeUtil } from './generate/GenerateShape';
-import { StartShape, StartShapeUtil } from './start/StartShape';
-import { TextShape, TextShapeUtil } from './text/TextShape';
 
-import { DataTool } from './data/DataShapeTool';
-import { GenerateTool } from './generate/GenerateShapeTool';
-import { StartTool } from './start/StartShapeTool';
-import { TextTool } from './text/TextShapeTool';
+import { InstructionShape, InstructionShapeUtil } from './instruction/InstructionShape';
+import { InstructionTool } from './instruction/InstructionShapeTool';
 
 // Export all shape types
-export type CustomShapeTypes = StartShape | GenerateShape | TextShape | DataShape
+export type CustomShapeTypes = InstructionShape
 
 // Export all shape utils
 export const customShapeUtils = [
-  StartShapeUtil, 
-  DataShapeUtil, 
-  GenerateShapeUtil, 
-  TextShapeUtil
+  InstructionShapeUtil, 
 ];
 
 // Export all tools
 export const customTools = [
-  StartTool,
-  DataTool,
-  GenerateTool,
-  TextTool
+  InstructionTool,
 ];
 
 // Export individual components
-export { DataTool } from './data/DataShapeTool';
-export { DataShapeUtil } from './data/DataShape';
-export { GenerateShapeUtil } from './generate/GenerateShape';
-export { GenerateTool } from './generate/GenerateShapeTool';
-export { StartShapeUtil } from './start/StartShape';
-export { StartTool } from './start/StartShapeTool';
-export { TextShapeUtil } from './text/TextShape';
-export { TextTool } from './text/TextShapeTool';
+export { InstructionShapeUtil } from './instruction/InstructionShape';
+export { InstructionTool } from './instruction/InstructionShapeTool';
+
 

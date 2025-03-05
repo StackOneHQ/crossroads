@@ -15,7 +15,6 @@ import {
   TLRecord,
   TLResizeInfo,
   resizeBox,
-  stopEventPropagation,
   useDefaultColorTheme,
   useValue
 } from 'tldraw'
@@ -28,9 +27,9 @@ const FONT_SIZES: Record<TLDefaultSizeStyle, number> = {
   xl: 32,
 }
 
-// Type definition for the generate block shape
-export type GenerateShape = TLBaseShape<
-  'generate-block',
+// Type definition for the instruction block shape
+export type InstructionShape = TLBaseShape<
+  'instruction-block',
   {
     w: number
     h: number
@@ -42,8 +41,8 @@ export type GenerateShape = TLBaseShape<
   }
 >
 
-// Props validation for the generate block shape
-export const generateShapeProps: RecordProps<GenerateShape> = {
+// Props validation for the instruction block shape
+export const instructionShapeProps: RecordProps<InstructionShape> = {
   w: T.number,
   h: T.number,
   prompt: T.string,
@@ -53,8 +52,8 @@ export const generateShapeProps: RecordProps<GenerateShape> = {
   font: DefaultFontStyle,
 }
 
-// Migrations for the generate block shape
-export const generateShapeMigrations = {
+// Migrations for the instruction block shape
+export const instructionShapeMigrations = {
   firstVersion: 1,
   currentVersion: 1,
   migrators: {
@@ -69,17 +68,17 @@ export const generateShapeMigrations = {
   },
 }
 
-// Generate block shape utility class
-export class GenerateShapeUtil extends ShapeUtil<GenerateShape> {
-  static override type = 'generate-block' as const
-  static override props = generateShapeProps
-  static override migrations = generateShapeMigrations
+// Instruction block shape utility class
+export class InstructionShapeUtil extends ShapeUtil<InstructionShape> {
+  static override type = 'instruction-block' as const
+  static override props = instructionShapeProps
+  static override migrations = instructionShapeMigrations
 
-  override isAspectRatioLocked = (_shape: GenerateShape): boolean => {
+  override isAspectRatioLocked = (_shape: InstructionShape): boolean => {
     return false
   }
 
-  override canResize = (_shape: GenerateShape): boolean => {
+  override canResize = (_shape: InstructionShape): boolean => {
     return true
   }
   
@@ -87,11 +86,11 @@ export class GenerateShapeUtil extends ShapeUtil<GenerateShape> {
     return true
   }
 
-  getDefaultProps = (): GenerateShape['props'] => {
+  getDefaultProps = (): InstructionShape['props'] => {
     return {
       w: 300,
       h: 200,
-      prompt: 'Generate a creative story about a robot learning to paint.',
+      prompt: 'a creative story about a robot learning to paint.',
       isGenerating: false,
       size: 'm',
       color: 'black',
@@ -99,7 +98,7 @@ export class GenerateShapeUtil extends ShapeUtil<GenerateShape> {
     }
   }
 
-  getGeometry = (shape: GenerateShape) => {
+  getGeometry = (shape: InstructionShape) => {
     return new Rectangle2d({
       width: shape.props.w,
       height: shape.props.h,
@@ -107,7 +106,7 @@ export class GenerateShapeUtil extends ShapeUtil<GenerateShape> {
     })
   }
 
-  component = (shape: GenerateShape) => {
+  component = (shape: InstructionShape) => {
     const { w, h, prompt, isGenerating, size, color, font } = shape.props
     const theme = useDefaultColorTheme()
     const isEditing = this.editor.getEditingShapeId() === shape.id
@@ -131,9 +130,9 @@ export class GenerateShapeUtil extends ShapeUtil<GenerateShape> {
 
     const handlePromptChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       const editor = this.editor
-      editor.updateShape<GenerateShape>({
+      editor.updateShape<InstructionShape>({
         id: shape.id,
-        type: 'generate-block',
+        type: 'instruction-block',
         props: {
           prompt: e.target.value,
         },
@@ -141,11 +140,7 @@ export class GenerateShapeUtil extends ShapeUtil<GenerateShape> {
     }
 
     const handleContainerClick = (e: React.MouseEvent) => {
-      if (!isEditing) {
-        e.stopPropagation()
-        this.editor.select(shape.id)
-        this.editor.setEditingShape(shape.id)
-      }
+      this.editor.setEditingShape(shape.id)
     }
 
     return (
@@ -199,7 +194,7 @@ export class GenerateShapeUtil extends ShapeUtil<GenerateShape> {
             >
               <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
             </svg>
-            Generate
+            Instruction
           </div>
           <div
             style={{
@@ -222,17 +217,6 @@ export class GenerateShapeUtil extends ShapeUtil<GenerateShape> {
           }}
         >
           <div style={{ flex: 1 }}>
-            <div
-              style={{
-                fontSize: Math.max(12, FONT_SIZES[size] * 0.7),
-                fontWeight: 'bold',
-                marginBottom: '4px',
-                color: theme[color].solid,
-                fontFamily: getFontFamily(font),
-              }}
-            >
-              Prompt
-            </div>
             <textarea
               value={prompt}
               onChange={handlePromptChange}
@@ -250,9 +234,6 @@ export class GenerateShapeUtil extends ShapeUtil<GenerateShape> {
                 outline: 'none',
               }}
               placeholder="Enter your prompt here..."
-              onClick={(e) => e.stopPropagation()}
-              readOnly={!isEditing}
-              autoFocus={isEditing}
               onFocus={(e) => {
                 if (isEditing) {
                   e.currentTarget.select()
@@ -261,30 +242,15 @@ export class GenerateShapeUtil extends ShapeUtil<GenerateShape> {
             />
           </div>
         </div>
-
-        {!isEditing && (
-          <div
-            style={{
-              fontSize: Math.max(12, FONT_SIZES[size] * 0.7),
-              textAlign: 'center',
-              marginTop: '8px',
-              opacity: 0.8,
-              color: theme[color].solid,
-              fontFamily: getFontFamily(font),
-            }}
-          >
-            Click to edit
-          </div>
-        )}
       </HTMLContainer>
     )
   }
 
-  indicator = (shape: GenerateShape) => {
+  indicator = (shape: InstructionShape) => {
     return <rect width={shape.props.w} height={shape.props.h} rx={8} ry={8} />
   }
 
-  override onResize = (shape: GenerateShape, info: TLResizeInfo<GenerateShape>) => {
+  override onResize = (shape: InstructionShape, info: TLResizeInfo<InstructionShape>) => {
     return resizeBox(shape, info)
   }
 }
