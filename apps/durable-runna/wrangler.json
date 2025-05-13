@@ -9,7 +9,7 @@
       "enabled": true
     }
   },
-  "build": { 
+  "build": {
     "command": "esbuild client/app.tsx --bundle --outfile=public/dist/app.js --platform=browser --loader:.css=css --minify"
   },
   "durable_objects": {

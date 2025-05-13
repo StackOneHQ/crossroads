@@ -1,5 +1,5 @@
 import { DurableObject, WorkerEntrypoint } from 'cloudflare:workers';
-import { Observable } from 'rxjs';
+import type { Observable } from 'rxjs';
 
 export type BaseState = Record<string, unknown>;
 

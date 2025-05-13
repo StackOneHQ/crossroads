@@ -1,10 +1,10 @@
-import { useParams } from "@tanstack/react-router";
-import usePartySocket from "partysocket/react";
-import { useEffect, useState } from "react";
-import "../styles/chat.css";
+import { useParams } from '@tanstack/react-router';
+import usePartySocket from 'partysocket/react';
+import { useEffect, useState } from 'react';
+import '../styles/chat.css';
 
 interface Message {
-  role: "user" | "assistant";
+  role: 'user' | 'assistant';
   content: string;
   timestamp: number;
 }
@@ -14,19 +14,19 @@ interface ChatProps {
 }
 
 export const ChatInterface = () => {
-  const { planId } = useParams({ from: "/chat/$planId" });
+  const { planId } = useParams({ from: '/chat/$planId' });
   const [messages, setMessages] = useState<Message[]>([]);
-  const [inputMessage, setInputMessage] = useState("");
+  const [inputMessage, setInputMessage] = useState('');
   const [state, setState] = useState<Record<string, unknown>>({});
   const [showState, setShowState] = useState(false);
 
   const socket = usePartySocket({
     room: planId,
-    party: "durable-runna",
+    party: 'durable-runna',
     onMessage(event) {
       try {
         const data = JSON.parse(event.data);
-        if (data.type === "message") {
+        if (data.type === 'message') {
           setMessages((prev) => [
             ...prev,
             {
@@ -37,7 +37,7 @@ export const ChatInterface = () => {
           ]);
         }
       } catch (error) {
-        console.error("Error parsing message:", error);
+        console.error('Error parsing message:', error);
       }
     },
   });
@@ -52,7 +52,7 @@ export const ChatInterface = () => {
         };
         setMessages(data.messages);
       } catch (error) {
-        console.error("Error fetching messages:", error);
+        console.error('Error fetching messages:', error);
       }
     };
 
@@ -64,38 +64,34 @@ export const ChatInterface = () => {
     if (!inputMessage.trim()) return;
 
     const message = {
-      type: "message",
+      type: 'message',
       content: inputMessage,
-      role: "user",
+      role: 'user',
     };
 
     socket.send(JSON.stringify(message));
     setMessages((prev) => [
       ...prev,
       {
-        role: "user",
+        role: 'user',
         content: inputMessage,
         timestamp: Date.now(),
       },
     ]);
-    setInputMessage("");
+    setInputMessage('');
   };
 
   const dumpState = async () => {
     try {
       const response = await fetch(`/api/${planId}/state`, {
-        method: "GET",
+        method: 'GET',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
       });
-      setState(
-        JSON.parse(
-          ((await response.json()) as { success: boolean; state: string }).state
-        )
-      );
+      setState(JSON.parse(((await response.json()) as { success: boolean; state: string }).state));
     } catch (error) {
-      console.error("Error dumping state:", error);
+      console.error('Error dumping state:', error);
     }
   };
 
@@ -115,7 +111,7 @@ export const ChatInterface = () => {
             <div
               key={message.timestamp + index}
               className={`message ${
-                message.role === "user" ? "user-message" : "assistant-message"
+                message.role === 'user' ? 'user-message' : 'assistant-message'
               }`}
             >
               <div className="message-content">{message.content}</div>
