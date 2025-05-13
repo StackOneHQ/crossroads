@@ -1,6 +1,6 @@
 {
   "name": "crossroads-mcp",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "module": "index.ts",
   "type": "module",
   "author": {
@@ -25,5 +25,18 @@
     "pyodide": "^0.27.5",
     "tsup": "^8.4.0",
     "tsx": "^4.19.4"
-  }
+  },
+  "keywords": [
+    "mcp",
+    "ai sdk",
+    "ai",
+    "model context protocol",
+    "crossroads",
+    "sonnet",
+    "openai",
+    "anthropic",
+    "gpt",
+    "mcp-router",
+    "router"
+  ]
 }
