@@ -19,7 +19,8 @@
         "useConst": "error"
       },
       "complexity": {
-        "noForEach": "warn"
+        "noForEach": "warn",
+        "noBannedTypes": "warn"
       }
     }
   },
@@ -37,6 +38,11 @@
     }
   },
   "files": {
-    "ignoreUnknown": true
+    "ignore": ["node_modules/**", "dist/**"]
+  },
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
   }
 }

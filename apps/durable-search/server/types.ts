@@ -1,38 +1,43 @@
 import { z } from 'zod';
 
 export enum DistanceMetric {
-  cosine = "cosine",
-  euclidean = "euclidean",
-  dot = "dot"
+  cosine = 'cosine',
+  euclidean = 'euclidean',
+  dot = 'dot',
 }
 
 export enum FilterOperator {
-  Eq = "Eq",
-  NotEq = "NotEq",
-  In = "In",
-  NotIn = "NotIn",
-  Lt = "Lt",
-  Lte = "Lte",
-  Gt = "Gt",
-  Gte = "Gte",
-  Glob = "Glob",
-  NotGlob = "NotGlob",
-  IGlob = "IGlob",
-  NotIGlob = "NotIGlob",
-  And = "And",
-  Or = "Or"
+  Eq = 'Eq',
+  NotEq = 'NotEq',
+  In = 'In',
+  NotIn = 'NotIn',
+  Lt = 'Lt',
+  Lte = 'Lte',
+  Gt = 'Gt',
+  Gte = 'Gte',
+  Glob = 'Glob',
+  NotGlob = 'NotGlob',
+  IGlob = 'IGlob',
+  NotIGlob = 'NotIGlob',
+  And = 'And',
+  Or = 'Or',
 }
 
-export type FilterValue = string | number | boolean | null | string[] | number[] | boolean[] | Filter[];
+export type FilterValue =
+  | string
+  | number
+  | boolean
+  | null
+  | string[]
+  | number[]
+  | boolean[]
+  | Filter[];
 
 export type Filter = [string, FilterOperator, FilterValue] | [FilterOperator, Filter[]];
 
 export const AttributeConfigSchema = z.object({
-  type: z.union([
-    z.literal('string'),
-    z.literal('[]uuid')
-  ]),
-  full_text_search: z.boolean().optional()
+  type: z.union([z.literal('string'), z.literal('[]uuid')]),
+  full_text_search: z.boolean().optional(),
 });
 
 export type AttributeConfig = z.infer<typeof AttributeConfigSchema>;
@@ -47,7 +52,7 @@ export const upsertSchema = z.object({
 });
 
 // Define recursive filter schema
-const filterValueSchema: z.ZodType<FilterValue> = z.lazy(() => 
+const filterValueSchema: z.ZodType<FilterValue> = z.lazy(() =>
   z.union([
     z.string(),
     z.number(),
@@ -56,14 +61,14 @@ const filterValueSchema: z.ZodType<FilterValue> = z.lazy(() =>
     z.array(z.string()),
     z.array(z.number()),
     z.array(z.boolean()),
-    z.array(filterSchema)
+    z.array(filterSchema),
   ])
 );
 
-const filterSchema: z.ZodType<Filter> = z.lazy(() => 
+const filterSchema: z.ZodType<Filter> = z.lazy(() =>
   z.union([
     z.tuple([z.string(), z.nativeEnum(FilterOperator), filterValueSchema]),
-    z.tuple([z.nativeEnum(FilterOperator), z.array(filterSchema)])
+    z.tuple([z.nativeEnum(FilterOperator), z.array(filterSchema)]),
   ])
 );
 
@@ -72,7 +77,7 @@ export const querySchema = z.object({
   top_k: z.number().int().positive().optional().default(10),
   distance_metric: z.nativeEnum(DistanceMetric).optional().default(DistanceMetric.cosine),
   filters: filterSchema.optional(),
-  cursor: z.string().optional()
+  cursor: z.string().optional(),
 });
 
 type AttributeValue = string | null;

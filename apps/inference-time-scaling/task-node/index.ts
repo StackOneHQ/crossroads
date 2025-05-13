@@ -1,4 +1,4 @@
-import { BaseState, CrossroadsGraphNode } from '@crossroads/infra';
+import { type BaseState, CrossroadsGraphNode } from '@crossroads/infra';
 
 // biome-ignore lint/complexity/noBannedTypes: <explanation>
 type Env = {};

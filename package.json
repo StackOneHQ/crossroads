@@ -7,9 +7,9 @@
     "lint": "turbo run lint",
     "test": "turbo run test",
     "typegen": "turbo run cf-typegen",
-    "format": "biome format --write .",
-    "lint:biome": "biome lint .",
-    "check": "biome check --apply ."
+    "check:fix:unsafe": "biome check --write --unsafe .",
+    "check:fix": "biome check --write.",
+    "check": "biome check ."
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",

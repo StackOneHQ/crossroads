@@ -1,5 +1,5 @@
-import { BaseState } from '@crossroads/infra';
 import { describe, expect, it } from 'bun:test';
+import type { BaseState } from '@crossroads/infra';
 import { firstValueFrom } from 'rxjs';
 import { Graph, SpecialNode } from './index';
 
@@ -114,15 +114,21 @@ describe('Graph', () => {
   it('should handle node failures and retry paths', async () => {
     const graph = new Graph<{}, TestState>()
       .addNode('A', createFailingNode('A'))
-      .addNode('B', createTestNode('B', n => n + 1))
-      .addNode('C', createTestNode('C', n => n + 1))
+      .addNode(
+        'B',
+        createTestNode('B', (n) => n + 1)
+      )
+      .addNode(
+        'C',
+        createTestNode('C', (n) => n + 1)
+      )
       .addEdge('A', 'B')
       .addEdge('B', 'C')
       .setMaxConcurrency(3);
 
-    await expect(
-      firstValueFrom(graph.build('A', { value: 0, path: [] }))
-    ).rejects.toThrow('A failed');
+    await expect(firstValueFrom(graph.build('A', { value: 0, path: [] }))).rejects.toThrow(
+      'A failed'
+    );
   });
 
   it('should handle cycles in the graph', async () => {
@@ -184,22 +190,37 @@ describe('Graph', () => {
 
   it('should stop after reaching maxNodeExecutions', async () => {
     const graph = new Graph<{}, TestState>()
-      .addNode('A', createTestNode('A', n => n + 1))
-      .addNode('B', createTestNode('B', n => n * 2))
+      .addNode(
+        'A',
+        createTestNode('A', (n) => n + 1)
+      )
+      .addNode(
+        'B',
+        createTestNode('B', (n) => n * 2)
+      )
       .addEdge('A', 'B')
       .addEdge('B', 'A')
       .setMaxNodeExecutions(3);
 
-    await expect(
-      firstValueFrom(graph.build('A', { value: 1, path: [] }))
-    ).rejects.toThrow('Max node executions reached');
+    await expect(firstValueFrom(graph.build('A', { value: 1, path: [] }))).rejects.toThrow(
+      'Max node executions reached'
+    );
   });
 
   it('should handle multiple concurrent paths and take first success', async () => {
     const graph = new Graph<{}, TestState>()
-      .addNode('start', createTestNode('start', n => n))
-      .addNode('fast', createDelayedNode('fast', 50, n => n + 1))
-      .addNode('slow', createDelayedNode('slow', 150, n => n + 2))
+      .addNode(
+        'start',
+        createTestNode('start', (n) => n)
+      )
+      .addNode(
+        'fast',
+        createDelayedNode('fast', 50, (n) => n + 1)
+      )
+      .addNode(
+        'slow',
+        createDelayedNode('slow', 150, (n) => n + 2)
+      )
       .addNode('end', SpecialNode.END)
       .addEdge('start', 'fast')
       .addEdge('start', 'slow')
@@ -215,14 +236,20 @@ describe('Graph', () => {
   it('should cancel other paths when one succeeds', async () => {
     let slowNodeExecuted = false;
     const graph = new Graph<{}, TestState>()
-      .addNode('start', createTestNode('start', n => n))
-      .addNode('fast', createDelayedNode('fast', 50, n => n + 1))
+      .addNode(
+        'start',
+        createTestNode('start', (n) => n)
+      )
+      .addNode(
+        'fast',
+        createDelayedNode('fast', 50, (n) => n + 1)
+      )
       .addNode('slow', {
         run: async (state: TestState) => {
-          await new Promise(resolve => setTimeout(resolve, 200));
+          await new Promise((resolve) => setTimeout(resolve, 200));
           slowNodeExecuted = true;
           return { ...state, value: state.value + 2, path: [...(state.path || []), 'slow'] };
-        }
+        },
       })
       .addNode('end', SpecialNode.END)
       .addEdge('start', 'fast')
@@ -239,8 +266,14 @@ describe('Graph', () => {
   it('should stop after reaching maxEdgeConditionCalls', async () => {
     let edgeCallCount = 0;
     const graph = new Graph<{}, TestState>()
-      .addNode('A', createTestNode('A', n => n + 1))
-      .addNode('B', createTestNode('B', n => n * 2))
+      .addNode(
+        'A',
+        createTestNode('A', (n) => n + 1)
+      )
+      .addNode(
+        'B',
+        createTestNode('B', (n) => n * 2)
+      )
       .addNode('end', SpecialNode.END)
       .addConditionalEdge('A', (result) => {
         edgeCallCount++;
@@ -257,10 +290,16 @@ describe('Graph', () => {
 
   it('should track execution counts in result', async () => {
     const graph = new Graph<{}, TestState>()
-      .addNode('A', createTestNode('A', n => n + 1))
-      .addNode('B', createTestNode('B', n => n * 2))
+      .addNode(
+        'A',
+        createTestNode('A', (n) => n + 1)
+      )
+      .addNode(
+        'B',
+        createTestNode('B', (n) => n * 2)
+      )
       .addNode('end', SpecialNode.END)
-      .addConditionalEdge('A', (result) => result.data.value < 5 ? 'B' : 'end')
+      .addConditionalEdge('A', (result) => (result.data.value < 5 ? 'B' : 'end'))
       .addConditionalEdge('B', () => 'A')
       .setMaxNodeExecutions(10)
       .setMaxEdgeConditionCalls(5)

@@ -185,3 +185,6 @@ dist
 **/node_modules/.pnpm/
 pnpm-lock.yaml
 .pnpm-debug.log
+
+
+.npmrc

@@ -1,8 +1,8 @@
-import { Graph, NodeResult, SpecialNode } from '@crossroads/graph';
-import { BaseState, CrossroadsGraphObject } from '@crossroads/infra';
-import { Observable, firstValueFrom } from 'rxjs';
-import TaskNode from '../task-node';
-import ValidationNode from '../validation-node';
+import { Graph, type NodeResult, SpecialNode } from '@crossroads/graph';
+import { type BaseState, CrossroadsGraphObject } from '@crossroads/infra';
+import { type Observable, firstValueFrom } from 'rxjs';
+import type TaskNode from '../task-node';
+import type ValidationNode from '../validation-node';
 
 interface Env {
   InferenceTimeScalingGraph: DurableObjectNamespace<InferenceTimeScalingGraph>;
@@ -28,8 +28,6 @@ export class InferenceTimeScalingGraph extends CrossroadsGraphObject<Env> {
 
   // limits the number of times edge conditions can be called (this limits iterations inside the graph)
   maxEdgeConditionCalls = 100;
-
-
 
   constructor(state: DurableObjectState, env: Env) {
     super(state, env);
@@ -75,7 +73,7 @@ export class InferenceTimeScalingGraph extends CrossroadsGraphObject<Env> {
 }
 
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(_request: Request, env: Env): Promise<Response> {
     const id = env.InferenceTimeScalingGraph.newUniqueId();
     const graph = env.InferenceTimeScalingGraph.get(id);
     const result = await graph.run();

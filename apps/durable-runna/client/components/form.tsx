@@ -1,47 +1,56 @@
-import { Button } from "@/client/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader } from "@/client/components/ui/card"
-import { Input } from "@/client/components/ui/input"
-import { Label } from "@/client/components/ui/label"
-import { Textarea } from "@/client/components/ui/textarea"
-import { useNavigate } from '@tanstack/react-router'
-import { useEffect, useState } from "react"
-import "../styles/form.css"
+import { Button } from '@/client/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+} from '@/client/components/ui/card';
+import { Input } from '@/client/components/ui/input';
+import { Label } from '@/client/components/ui/label';
+import { Textarea } from '@/client/components/ui/textarea';
+import { useNavigate } from '@tanstack/react-router';
+import { useEffect, useState } from 'react';
+import '../styles/form.css';
 
 export default function RunningPlanGenerator() {
-  const navigate = useNavigate()
-  const [mileage, setMileage] = useState("")
-  const [race, setRace] = useState("")
-  const [targetTime, setTargetTime] = useState("")
-  const [additionalInfo, setAdditionalInfo] = useState("")
-  const [weeklyTime, setWeeklyTime] = useState("")
-  const [aboutYou, setAboutYou] = useState("")
-  
+  const navigate = useNavigate();
+  const [mileage, setMileage] = useState('');
+  const [race, setRace] = useState('');
+  const [targetTime, setTargetTime] = useState('');
+  const [additionalInfo, setAdditionalInfo] = useState('');
+  const [weeklyTime, setWeeklyTime] = useState('');
+  const [aboutYou, setAboutYou] = useState('');
+
   useEffect(() => {
     // Retrieve form data from localStorage on component mount
     const storedFormData = localStorage.getItem('runningPlanFormData');
     if (storedFormData) {
       const formData = JSON.parse(storedFormData);
-      setMileage(formData.mileage || "");
-      setRace(formData.race || "");
-      setTargetTime(formData.targetTime || "");
-      setAdditionalInfo(formData.additionalInfo || "");
-      setWeeklyTime(formData.weeklyTime || "");
-      setAboutYou(formData.aboutYou || "");
+      setMileage(formData.mileage || '');
+      setRace(formData.race || '');
+      setTargetTime(formData.targetTime || '');
+      setAdditionalInfo(formData.additionalInfo || '');
+      setWeeklyTime(formData.weeklyTime || '');
+      setAboutYou(formData.aboutYou || '');
     }
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
+    e.preventDefault();
+
     // Store form data in localStorage before submitting
-    localStorage.setItem('runningPlanFormData', JSON.stringify({
-      mileage,
-      race,
-      targetTime,
-      weeklyTime,
-      additionalInfo,
-      aboutYou
-    }));
+    localStorage.setItem(
+      'runningPlanFormData',
+      JSON.stringify({
+        mileage,
+        race,
+        targetTime,
+        weeklyTime,
+        additionalInfo,
+        aboutYou,
+      })
+    );
 
     try {
       const response = await fetch('/api/info', {
@@ -55,21 +64,21 @@ export default function RunningPlanGenerator() {
           targetTime,
           weeklyTime,
           additionalInfo,
-          aboutYou
+          aboutYou,
         }),
-      })
+      });
 
       if (!response.ok) {
-        throw new Error('Failed to submit running plan request')
+        throw new Error('Failed to submit running plan request');
       }
 
-      const data = await response.json() as { success: boolean, id: string }
-      navigate({ to: '/chat/$planId', params: { planId: data.id } })
+      const data = (await response.json()) as { success: boolean; id: string };
+      navigate({ to: '/chat/$planId', params: { planId: data.id } });
     } catch (error) {
-      console.error('Error submitting form:', error)
-      alert('Failed to submit running plan request. Please try again.')
+      console.error('Error submitting form:', error);
+      alert('Failed to submit running plan request. Please try again.');
     }
-  }
+  };
 
   return (
     <Card className="form-card">
@@ -80,7 +89,7 @@ export default function RunningPlanGenerator() {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="form-content">
-        <div className="form-field">
+          <div className="form-field">
             <Label htmlFor="about-you">About you</Label>
             <Input
               id="about-you"
@@ -148,5 +157,5 @@ export default function RunningPlanGenerator() {
         </Button>
       </CardFooter>
     </Card>
-  )
+  );
 }
