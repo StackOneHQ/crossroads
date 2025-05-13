@@ -19,7 +19,8 @@
         "useConst": "error"
       },
       "complexity": {
-        "noForEach": "warn"
+        "noForEach": "warn",
+        "noBannedTypes": "warn"
       }
     }
   },
