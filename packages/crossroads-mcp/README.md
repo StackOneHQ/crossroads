@@ -1,6 +1,6 @@
-# Crossroads
+# Crossroads MCP
 
-> crossroads is a collection of quick tools to help you build AI applications.
+> crossroads is a collection of useful tools to help you build AI applications using the MCP protocol and the AI SDK.
 
 ## MCP Router
 

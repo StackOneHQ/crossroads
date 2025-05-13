@@ -1,5 +1,5 @@
 {
-  "name": "@crossroads/mcp-router",
+  "name": "crossroads-mcp",
   "version": "0.0.1",
   "module": "index.ts",
   "type": "module",
